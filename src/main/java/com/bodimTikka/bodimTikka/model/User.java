@@ -25,4 +25,8 @@ public class User {
     private String email;  // Nullable for unregistered users
 
     private String password;  // Nullable
+
+    public User(String name) {
+        this.name = name;
+    }
 }

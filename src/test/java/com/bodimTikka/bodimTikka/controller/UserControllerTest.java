@@ -1,6 +1,7 @@
 package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.model.User;
+import com.bodimTikka.bodimTikka.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,15 @@ public class UserControllerTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private UserRepository userRepository;
+
     private String baseUrl;
 
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port + "/users";
+        userRepository.deleteAll();
     }
 
     // TODO: handle duplicate errors
@@ -44,7 +49,7 @@ public class UserControllerTest {
 
     @Test
     void testGetUserById() {
-        User user = new User(null, "Alice", "alis@example.com", "secret");
+        User user = new User(null, "Alice", "alice@example.com", "secret");
         ResponseEntity<User> createdUserResponse = restTemplate.postForEntity(baseUrl, user, User.class);
 
         Long userId = createdUserResponse.getBody().getId();
@@ -57,6 +62,9 @@ public class UserControllerTest {
 
     @Test
     void testGetAllUsers() {
+        User user = new User();
+        user.setName("user");
+        userRepository.save(user);
         ResponseEntity<User[]> response = restTemplate.getForEntity(baseUrl, User[].class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
@@ -77,7 +85,7 @@ public class UserControllerTest {
 
     @Test
     void testDeleteUser() {
-        User user = new User(null, "Charlie", "charles@example.com", "mypass");
+        User user = new User(null, "Charlie", "charlie@example.com", "mypass");
         ResponseEntity<User> createdUserResponse = restTemplate.postForEntity(baseUrl, user, User.class);
 
         Long userId = createdUserResponse.getBody().getId();

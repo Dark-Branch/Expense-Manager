@@ -5,11 +5,13 @@ import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.repository.RoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+
 
 @Service
 public class RoomService {

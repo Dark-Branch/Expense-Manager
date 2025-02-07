@@ -26,6 +26,8 @@ public class Payment {
     private BigDecimal amount;
 
     private String description;
+    @Column(name = "is_repayment")
+    private Boolean isRepayment;
 
     @Column(name = "payment_timestamp", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime paymentTimestamp = LocalDateTime.now();

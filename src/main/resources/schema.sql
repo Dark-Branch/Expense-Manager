@@ -10,7 +10,7 @@ CREATE TABLE room (
     name VARCHAR(255) NOT NULL
 );
 
-CREATE TABLE users_in_room (
+CREATE TABLE user_in_room (
     id SERIAL PRIMARY KEY,
     user_id INT NOT NULL,
     room_id INT NOT NULL,
@@ -25,6 +25,7 @@ CREATE TABLE payment (
     room_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     description TEXT,
+        is_repayment BOOLEAN NOT NULL DEFAULT FALSE,
     payment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE
 );

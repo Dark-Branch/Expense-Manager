@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.model.Roomer;
+import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.service.RoomerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,29 +16,29 @@ public class RoomerController {
     private RoomerService roomerService;
 
     @GetMapping
-    public List<Roomer> getAllRoomers() {
+    public List<User> getAllRoomers() {
         return roomerService.getAllRoomers();
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Roomer> getRoomerById(@PathVariable Long id) {
+    public ResponseEntity<User> getRoomerById(@PathVariable Long id) {
         return roomerService.getRoomerById(id)
                 .map(ResponseEntity::ok)
                 .orElse(ResponseEntity.notFound().build());
     }
 
     @PostMapping
-    public Roomer createRoomer(@RequestBody Roomer roomer) {
-        return roomerService.saveRoomer(roomer);
+    public User createRoomer(@RequestBody User user) {
+        return roomerService.saveRoomer(user);
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<Roomer> updateRoomer(@PathVariable Long id, @RequestBody Roomer roomerDetails) {
+    public ResponseEntity<User> updateRoomer(@PathVariable Long id, @RequestBody User userDetails) {
         return roomerService.getRoomerById(id)
                 .map(roomer -> {
-                    roomer.setName(roomerDetails.getName());
-                    Roomer updatedRoomer = roomerService.saveRoomer(roomer);
-                    return ResponseEntity.ok(updatedRoomer);
+                    roomer.setName(userDetails.getName());
+                    User updatedUser = roomerService.saveRoomer(roomer);
+                    return ResponseEntity.ok(updatedUser);
                 })
                 .orElse(ResponseEntity.notFound().build());
     }

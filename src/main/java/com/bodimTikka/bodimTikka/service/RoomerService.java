@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.model.Roomer;
+import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.RoomerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,16 +14,16 @@ public class RoomerService {
     @Autowired
     private RoomerRepository roomerRepository;
 
-    public List<Roomer> getAllRoomers() {
+    public List<User> getAllRoomers() {
         return roomerRepository.findAll();
     }
 
-    public Optional<Roomer> getRoomerById(Long id) {
+    public Optional<User> getRoomerById(Long id) {
         return roomerRepository.findById(id);
     }
 
-    public Roomer saveRoomer(Roomer roomer) {
-        return roomerRepository.save(roomer);
+    public User saveRoomer(User user) {
+        return roomerRepository.save(user);
     }
 
     public void deleteRoomer(Long id) {

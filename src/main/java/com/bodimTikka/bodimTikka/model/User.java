@@ -3,15 +3,13 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
-
 @Entity
-@Table(name = "room")
+@Table(name = "\"user\"")  // Use double quotes for reserved keywords in PostgreSQL
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class Room {
+public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -19,4 +17,9 @@ public class Room {
 
     @Column(nullable = false)
     private String name;
+
+    @Column(unique = true)
+    private String email;  // Nullable for unregistered users
+
+    private String password;  // Nullable
 }

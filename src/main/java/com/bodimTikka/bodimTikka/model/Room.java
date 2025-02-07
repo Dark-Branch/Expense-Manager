@@ -20,4 +20,8 @@ public class Room {
 
     @Column(nullable = false)
     private String name;
+
+    public Room(String name) {
+        this.name = name;
+    }
 }

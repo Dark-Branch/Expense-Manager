@@ -3,10 +3,11 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.UUID;
 
 @Entity
-@Table(name = "payment_log")
+@Table(name = "transaction_log")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,21 +15,18 @@ import java.util.UUID;
 public class Payment {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private UUID paymentId;
 
     @ManyToOne
-    @JoinColumn(name = "from_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentlog_from_user"))
-    private User fromUser;
-
-    @ManyToOne
-    @JoinColumn(name = "to_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentlog_to_user"))
-    private User toUser;
+    @JoinColumn(name = "room_id", nullable = false, foreignKey = @ForeignKey(name = "fk_payment_room"))
+    private Room room;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @ManyToOne
-    @JoinColumn(name = "transaction_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentlog_transaction"))
-    private Transaction transaction;
+    private String description;
+
+    @Column(name = "payment_timestamp", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
+    private LocalDateTime paymentTimestamp = LocalDateTime.now();
 }

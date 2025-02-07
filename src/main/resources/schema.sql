@@ -20,24 +20,24 @@ CREATE TABLE users_in_room (
     UNIQUE (user_id, room_id)       -- Ensures a user can only be added once to a room
 );
 
-CREATE TABLE transaction_log (
-    transaction_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+CREATE TABLE payment (
+    payment_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     room_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
     description TEXT,
-    transaction_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    payment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE
 );
 
-CREATE INDEX idx_transaction_timestamp ON transaction_log(transaction_timestamp DESC);
+CREATE INDEX idx_payment_timestamp ON payment(payment_timestamp DESC);
 
-CREATE TABLE payment_log (
+CREATE TABLE payment_record (
     id SERIAL PRIMARY KEY,
     from_user_id INT NOT NULL,
     to_user_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL,
-    transaction_id UUID NOT NULL,
+    payment_id UUID NOT NULL,
     FOREIGN KEY (from_user_id) REFERENCES "user"(id) ON DELETE CASCADE,
     FOREIGN KEY (to_user_id) REFERENCES "user"(id) ON DELETE CASCADE,
-    FOREIGN KEY (transaction_id) REFERENCES transaction_log(transaction_id) ON DELETE CASCADE
+    FOREIGN KEY (payment_id) REFERENCES payment(payment_id) ON DELETE CASCADE
 );

@@ -61,16 +61,12 @@ public class PaymentService {
         }
 
         Payment finalPayment = payment;
-        paymentRecords = recipients.stream().map(recipient -> {
-            PaymentRecord record = new PaymentRecord();
-            record.setFromUser(payer);
-            record.setToUser(recipient);
-            record.setAmount(splitAmount);
-            record.setPayment(finalPayment);
-            paymentRecordRepository.save(record);
-
-            return new PaymentRecordDTO(payer.getId(), recipient.getId(), splitAmount);
-        }).collect(Collectors.toList());
+        paymentRecords = recipients.stream()
+                .map(recipient -> {
+                    PaymentRecord record = createPaymentRecord(payer, recipient, splitAmount, finalPayment);
+                    return new PaymentRecordDTO(record.getFromUser().getId(), record.getToUser().getId(), splitAmount, record.getIsCredit());
+                })
+                .collect(Collectors.toList());
 
         return new PaymentResponseDTO(
                 payment.getPaymentId(),
@@ -82,6 +78,25 @@ public class PaymentService {
         );
     }
 
+    private PaymentRecord createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
+        PaymentRecord record = new PaymentRecord();
+
+        // if always transaction goes from low user to high id user
+        if (recipient.getId() < payer.getId()) {
+            record.setFromUser(recipient);
+            record.setToUser(payer);
+            record.setIsCredit(true);
+        } else {
+            record.setFromUser(payer);
+            record.setToUser(recipient);
+            record.setIsCredit(false);
+        }
+
+        record.setAmount(amount);
+        record.setPayment(payment);
+        return paymentRecordRepository.save(record);
+    }
+
     public List<PaymentResponseDTO> getAllPayments() {
         return paymentRepository.findAll().stream().map(payment -> {
             List<PaymentRecordDTO> records = paymentRecordRepository.findAll()
@@ -90,7 +105,8 @@ public class PaymentService {
                     .map(record -> new PaymentRecordDTO(
                             record.getFromUser().getId(),
                             record.getToUser().getId(),
-                            record.getAmount()))
+                            record.getAmount(),
+                            record.getIsCredit()))
                     .collect(Collectors.toList());
 
             return new PaymentResponseDTO(

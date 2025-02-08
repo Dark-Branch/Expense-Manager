@@ -2,6 +2,7 @@ package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
+import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
 import java.math.BigDecimal;
@@ -179,4 +181,42 @@ public class PaymentControllerTest {
         assertThat(response.getBody().length).isEqualTo(0); // No payments in the system
     }
 
+    @Test
+    public void shouldReturnPaymentsForRoom() {
+        Payment payment1 = new Payment();
+        payment1.setRoom(room);
+        payment1.setAmount(BigDecimal.valueOf(50));
+        payment1 = paymentRepository.save(payment1);
+
+        Payment payment2 = new Payment();
+        payment2.setRoom(room);
+        payment2.setAmount(BigDecimal.valueOf(75));
+        payment2 = paymentRepository.save(payment2);
+
+        ResponseEntity<List<Payment>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "?limit=20",
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                new ParameterizedTypeReference<List<Payment>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().size()).isEqualTo(2);
+        assertThat(response.getBody().get(0).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(75));
+        assertThat(response.getBody().get(1).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50));
+    }
+
+    @Test
+    public void shouldReturnEmptyListWhenNoPaymentsExistForRoom() {
+        ResponseEntity<List<Payment>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "?limit=5&page=0",
+                HttpMethod.GET,
+                HttpEntity.EMPTY,
+                new ParameterizedTypeReference<List<Payment>>() {}        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().size()).isEqualTo(0);
+    }
 }

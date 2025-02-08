@@ -26,6 +26,7 @@ public class Payment {
     private BigDecimal amount;
 
     private String description;
+
     @Column(name = "is_repayment")
     private Boolean isRepayment;
 

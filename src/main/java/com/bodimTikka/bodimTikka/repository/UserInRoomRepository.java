@@ -11,4 +11,7 @@ public interface UserInRoomRepository extends JpaRepository<UserInRoom, Long> {
 
     @Query("SELECT uir FROM UserInRoom uir WHERE uir.room.id = :roomId AND uir.isStillAMember = true")
     List<UserInRoom> findUsersByRoomId(@Param("roomId") Long roomId);
+
+    @Query("SELECT uir.user.id FROM UserInRoom uir WHERE uir.room.id = :roomId")
+    List<Long> findUserIdsByRoomId(@Param("roomId") Long roomId);
 }

@@ -1,5 +1,6 @@
 package com.bodimTikka.bodimTikka.service;
 
+import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -27,15 +28,24 @@ public class RoomService {
                 .collect(Collectors.toList());
         }
 
-    public Optional<Room> getRoomById(String id) {
+    // TODO: add main room mambers in get rooms dto and then can lazily load members for other rooms
+    public Optional<Room> getRoomById(Long id) {
         return roomRepository.findById(id);
     }
+
+    public List<RoomDTO> getRoomsByUserId(Long userId) {
+        List<Room> rooms = roomRepository.findRoomsByUserId(userId);
+        return rooms.stream()
+                .map(room -> new RoomDTO(room.getId(), room.getName()))
+                .collect(Collectors.toList());
+    }
+
 
     public Room saveRoom(Room room) {
         return roomRepository.save(room);
     }
 
-    public void deleteRoom(String id) {
+    public void deleteRoom(Long id) {
         roomRepository.deleteById(id);
     }
 }

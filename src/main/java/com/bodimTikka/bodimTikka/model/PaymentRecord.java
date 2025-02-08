@@ -27,6 +27,9 @@ public class PaymentRecord {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
+    @Column(name = "is_credit")
+    private Boolean isCredit;
+
     @ManyToOne
     @JoinColumn(name = "payment_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_payment"))
     private Payment payment;

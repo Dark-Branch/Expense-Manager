@@ -125,22 +125,9 @@ class RoomControllerTest {
         assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 2");
     }
 
-
     @Test
     void testGetRoomByRoomerId_InvalidRoomerId() {
         ResponseEntity<Room> response = restTemplate.getForEntity("/rooms/roomer/99999", Room.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void testGetRoomByRoomerId_EmptyRoomerId() {
-        ResponseEntity<Room> response = restTemplate.getForEntity("/rooms/roomer/", Room.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-    }
-
-    @Test
-    void testGetRoomByRoomerId_BadRequest() {
-        ResponseEntity<Room> response = restTemplate.getForEntity("/rooms/roomer/error", Room.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 }

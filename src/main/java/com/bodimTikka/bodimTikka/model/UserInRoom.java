@@ -2,11 +2,13 @@ package com.bodimTikka.bodimTikka.model;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
 @Getter
 @Setter
+@NoArgsConstructor
 public class UserInRoom {
 
     @Id
@@ -23,4 +25,9 @@ public class UserInRoom {
 
     @Column(name = "is_still_a_member")
     private boolean isStillAMember;
+
+    public UserInRoom(User user, Room room) {
+        this.user = user;
+        this.room = room;
+    }
 }

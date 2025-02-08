@@ -3,6 +3,7 @@ package com.bodimTikka.bodimTikka.service;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
+import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.repository.RoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
@@ -26,7 +27,11 @@ public class RoomService {
         return usersInRoom.stream()
                 .map(uir -> new UserDTO(uir.getUser().getId(), uir.getUser().getName(), uir.getUser().getEmail()))
                 .collect(Collectors.toList());
-        }
+    }
+
+    public List<Long> getRoomUserIDs(Long roomID){
+        return userInRoomRepository.findUserIdsByRoomId(roomID);
+    }
 
     // TODO: add main room mambers in get rooms dto and then can lazily load members for other rooms
     public Optional<Room> getRoomById(Long id) {
@@ -39,7 +44,6 @@ public class RoomService {
                 .map(room -> new RoomDTO(room.getId(), room.getName()))
                 .collect(Collectors.toList());
     }
-
 
     public Room saveRoom(Room room) {
         return roomRepository.save(room);

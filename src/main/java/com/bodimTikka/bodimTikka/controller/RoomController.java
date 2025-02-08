@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.controller;
 
+import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
-import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -19,7 +19,7 @@ public class RoomController {
     private RoomService roomService;
 
     @GetMapping("/{id}")
-    public ResponseEntity<Room> getRoomById(@PathVariable String id) {
+    public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
         Optional<Room> room = roomService.getRoomById(id);
         return room.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
@@ -29,10 +29,10 @@ public class RoomController {
         return roomService.getRoomUsers(roomId);
     }
 
-    @GetMapping("/roomer/{id}")
-    public ResponseEntity<Room> getRoomByRoomerId(@PathVariable String id) {
-        Optional<Room> room = roomService.getRoomById(id);
-        return room.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
+    @GetMapping("/roomer/{userId}")
+    public ResponseEntity<List<RoomDTO>> getRoomsByUserId(@PathVariable Long userId) {
+        List<RoomDTO> roomDTOs = roomService.getRoomsByUserId(userId);
+        return roomDTOs.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(roomDTOs);
     }
 
     @PostMapping
@@ -41,7 +41,7 @@ public class RoomController {
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable String id) {
+    public ResponseEntity<Void> deleteRoom(@PathVariable Long id) {
         roomService.deleteRoom(id);
         return ResponseEntity.noContent().build();
     }

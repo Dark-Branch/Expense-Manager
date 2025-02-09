@@ -116,7 +116,14 @@ public class PaymentService {
     public List<Payment> getPaymentByRoomId(Long roomId, int limit, int page){
         Pageable pageable = PageRequest.of(page, limit);
         return paymentRepository.findLastPaymentsByRoomId(roomId, pageable);
+
     }
+
+    private static void verifyContains(Long value, List<Long> target, String message) {
+        if (!target.contains(value))
+            throw new InvalidArgumentException(message);
+    }
+
 
     private PaymentRecord createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();

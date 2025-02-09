@@ -2,6 +2,7 @@ package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
+import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -29,4 +30,13 @@ public class PaymentController {
     public ResponseEntity<List<PaymentResponseDTO>> getAllPayments() {
         return ResponseEntity.ok(paymentService.getAllPayments());
     }
+
+    @GetMapping("/room/{id}")
+    public ResponseEntity<List<Payment>> getPaymentByRoomId(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(paymentService.getPaymentByRoomId(id, limit, page));
+    }
+
 }

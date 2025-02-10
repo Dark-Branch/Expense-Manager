@@ -95,11 +95,6 @@ public class PaymentService {
         }).toList();
     }
 
-    private static void verifyContains(Long value, List<Long> target, String message) {
-        if (!target.contains(value))
-            throw new InvalidArgumentException(message);
-    }
-
     public List<Payment> getPaymentByRoomId(Long roomId, int limit, int page){
         Pageable pageable = PageRequest.of(page, limit);
         return paymentRepository.findLastPaymentsByRoomId(roomId, pageable);

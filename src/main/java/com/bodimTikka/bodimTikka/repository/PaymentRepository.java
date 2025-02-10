@@ -19,8 +19,8 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             "FROM PaymentRecord pr " +
             "JOIN pr.payment p " +
             "WHERE p.room.id = :roomId " +
-            "AND pr.fromUser.id = :userId1 " +
-            "AND pr.toUser.id = :userId2 " +
+            "AND ((pr.fromUser.id = :userId1 AND pr.toUser.id = :userId2) " +
+            "OR (pr.fromUser.id = :userId2 AND pr.toUser.id = :userId1)) " +
             "ORDER BY p.paymentTimestamp DESC")
     List<UserPaymentLogDTO> findLastPaymentsByRoomIdAndUsers(
             @Param("roomId") Long roomId,

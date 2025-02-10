@@ -49,6 +49,8 @@ public class PaymentControllerTest {
     void setUp() {
         userRepository.deleteAll();
         roomRepository.deleteAll();
+        paymentRepository.deleteAll();
+        paymentRecordRepository.deleteAll();
 
         room = roomRepository.save(new Room("Test Room"));
 
@@ -130,11 +132,11 @@ public class PaymentControllerTest {
 
         ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().get("message")).isEqualTo("payer Id does not belong to room");
         assertThat(response.getBody().get("timestamp")).isNotNull();
-        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -144,10 +146,10 @@ public class PaymentControllerTest {
 
         ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("message")).isEqualTo("Recipient Id does not belong to room");
         assertThat(response.getBody().get("timestamp")).isNotNull();
-        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -217,7 +219,8 @@ public class PaymentControllerTest {
                 "/payments/room/" + room.getId() + "?limit=5&page=0",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
-                new ParameterizedTypeReference<List<Payment>>() {}        );
+                new ParameterizedTypeReference<List<Payment>>() {}
+        );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
@@ -254,6 +257,46 @@ public class PaymentControllerTest {
                 payment(payment2).build();
         paymentRecordRepository.save(record2);
 
+        ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_NoPayments() {
+        User user1 = userRepository.save(new User("Alice"));
+        User user2 = userRepository.save(new User("Bob"));
+
+        userInRoomRepository.save(new UserInRoom(user1, room));
+        userInRoomRepository.save(new UserInRoom(user2, room));
+
+        ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).isEmpty();
+    }
+
+
+    @Test
+    void testGetPaymentLogBetweenUsers_UserNotInRoom() {
+        User user1 = userRepository.save(new User("Alice"));
+        User user2 = userRepository.save(new User("Bob"));
+
+        userInRoomRepository.save(new UserInRoom(user1, room));
+
         ResponseEntity<String> response = restTemplate.exchange(
                 "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
                 HttpMethod.GET,
@@ -261,8 +304,38 @@ public class PaymentControllerTest {
                 String.class
         );
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-//        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Users do not belong to the room");
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_RoomNotFound() {
+        // non-existing room ID
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/payments/room/99999/users?user1=1&user2=2",
+                HttpMethod.GET,
+                null,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).contains("Room not found");
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_MissingUserIds() {
+        // Create a room
+        Room room = roomRepository.save(new Room("Test Room"));
+
+        // Call endpoint without user parameters
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users",
+                HttpMethod.GET,
+                null,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Required parameter 'user1' is missing.");
     }
 }

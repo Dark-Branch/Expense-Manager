@@ -106,15 +106,23 @@ public class PaymentService {
             throw new InvalidArgumentException(message);
     }
 
-    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page){
-//        if (roomService.isUsersBelongToRoom(Long roomId))
-//            throw new InvalidArgumentException("Users does not belong to the Room");
+    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page) {
+        Room room = roomService.getRoomById(roomId).orElseThrow(() -> new
+                NotFoundException("Room not found"));
+
+        List<Long> userIds = roomService.getRoomUserIDs(roomId);
+        if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
+            throw new InvalidArgumentException("Users do not belong to the room");
+        }
+
+        if (page < 0 || limit <= 0) {
+            throw new InvalidArgumentException("Invalid pagination parameters");
+        }
+
         Pageable pageable = PageRequest.of(page, limit);
-        // TODO: check for roomId
         return paymentRepository.findLastPaymentsByRoomIdAndUsers(roomId, userId1, userId2, pageable);
     }
-
-    private PaymentRecord createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
+    private void createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();
 
         // if always transaction goes from low user to high id user
@@ -130,7 +138,7 @@ public class PaymentService {
 
         record.setAmount(amount);
         record.setPayment(payment);
-        return paymentRecordRepository.save(record);
+        paymentRecordRepository.save(record);
     }
 
     public List<PaymentResponseDTO> getAllPayments() {

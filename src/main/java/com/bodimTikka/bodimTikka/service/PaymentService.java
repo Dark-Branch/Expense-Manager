@@ -1,10 +1,7 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentRecordDTO;
+import com.bodimTikka.bodimTikka.DTO.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidArgumentException;
-import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.model.PaymentRecord;
@@ -19,7 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
+import java.sql.Timestamp;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,8 +33,13 @@ public class PaymentService {
         this.roomService = roomService;
     }
 
+    // for testing
+    public Payment getById(UUID id){
+        return paymentRepository.findById(id).orElseThrow(() -> new NotFoundException("Payment Not Found"));
+    }
+
     @Transactional
-    public PaymentResponseDTO createPayment(PaymentRequestDTO paymentRequest) {
+    public Payment createPayment(PaymentRequestDTO paymentRequest) {
         Room room = roomService.getRoomById(paymentRequest.getRoomId()).orElseThrow(() -> new
                 NotFoundException("Room not found"));
 
@@ -45,35 +48,19 @@ public class PaymentService {
         List<User> recipients = getRecipients(paymentRequest, userIDs);
 
         Payment payment = makePayment(paymentRequest, room);
-        BigDecimal splitAmount = getSplittedPaymentAmount(paymentRequest, recipients);
-        List<PaymentRecordDTO> paymentRecords = getPaymentRecordDTOS(recipients, payer, splitAmount, payment);
+        BigDecimal splitAmount = getSplitPaymentAmount(paymentRequest, recipients);
 
-        return getPaymentResponseDTO(payment, paymentRecords);
+        createPaymentRecords(recipients, payer, splitAmount, payment);
+        return payment;
     }
 
-    private static PaymentResponseDTO getPaymentResponseDTO(Payment payment, List<PaymentRecordDTO> paymentRecords) {
-        return new PaymentResponseDTO(
-                payment.getPaymentId(),
-                payment.getRoom().getId(),
-                payment.getAmount(),
-                payment.getIsRepayment(),
-                payment.getPaymentTimestamp(),
-                paymentRecords
-        );
+    private void createPaymentRecords(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
+        recipients.forEach(recipient -> {
+            createPaymentRecord(payer, recipient, splitAmount, payment);
+        });
     }
 
-    private List<PaymentRecordDTO> getPaymentRecordDTOS(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
-        List<PaymentRecordDTO> paymentRecords;
-        paymentRecords = recipients.stream()
-                .map(recipient -> {
-                    PaymentRecord record = createPaymentRecord(payer, recipient, splitAmount, payment);
-                    return new PaymentRecordDTO(record.getFromUser().getId(), record.getToUser().getId(), splitAmount, record.getIsCredit());
-                })
-                .collect(Collectors.toList());
-        return paymentRecords;
-    }
-
-    private static BigDecimal getSplittedPaymentAmount(PaymentRequestDTO paymentRequest, List<User> recipients) {
+    private static BigDecimal getSplitPaymentAmount(PaymentRequestDTO paymentRequest, List<User> recipients) {
         BigDecimal splitAmount;
         if (!paymentRequest.isRepayment()) {
             splitAmount = paymentRequest.getTotalAmount().divide(BigDecimal.valueOf(recipients.size()), RoundingMode.HALF_UP);
@@ -108,11 +95,6 @@ public class PaymentService {
         }).toList();
     }
 
-    private static void verifyContains(Long value, List<Long> target, String message) {
-        if (!target.contains(value))
-            throw new InvalidArgumentException(message);
-    }
-
     public List<Payment> getPaymentByRoomId(Long roomId, int limit, int page){
         Pageable pageable = PageRequest.of(page, limit);
         return paymentRepository.findLastPaymentsByRoomId(roomId, pageable);
@@ -124,8 +106,23 @@ public class PaymentService {
             throw new InvalidArgumentException(message);
     }
 
+    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page) {
+        Room room = roomService.getRoomById(roomId).orElseThrow(() -> new
+                NotFoundException("Room not found"));
 
-    private PaymentRecord createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
+        List<Long> userIds = roomService.getRoomUserIDs(roomId);
+        if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
+            throw new InvalidArgumentException("Users do not belong to the room");
+        }
+
+        if (page < 0 || limit <= 0) {
+            throw new InvalidArgumentException("Invalid pagination parameters");
+        }
+
+        Pageable pageable = PageRequest.of(page, limit);
+        return paymentRepository.findLastPaymentsByRoomIdAndUsers(roomId, userId1, userId2, pageable);
+    }
+    private void createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();
 
         // if always transaction goes from low user to high id user
@@ -141,7 +138,7 @@ public class PaymentService {
 
         record.setAmount(amount);
         record.setPayment(payment);
-        return paymentRecordRepository.save(record);
+        paymentRecordRepository.save(record);
     }
 
     public List<PaymentResponseDTO> getAllPayments() {
@@ -159,4 +156,36 @@ public class PaymentService {
             return getPaymentResponseDTO(payment, records);
         }).collect(Collectors.toList());
     }
+
+    // TODO: check both users are same
+    private static PaymentResponseDTO getPaymentResponseDTO(Payment payment, List<PaymentRecordDTO> paymentRecords) {
+        return new PaymentResponseDTO(
+                payment.getPaymentId(),
+                payment.getRoom().getId(),
+                payment.getAmount(),
+                payment.getIsRepayment(),
+                payment.getPaymentTimestamp(),
+                paymentRecords
+        );
+    }
+
+    public List<RoomPaymentLogDTO> getLastRoomPayments(Long roomId, int limit, int page) {
+        // native query, so no pageable
+        int offset = page * limit;
+        List<Object[]> results = paymentRepository.findLastRoomPayments(roomId, limit, offset);
+
+        return results.stream().map(row -> new RoomPaymentLogDTO(
+                (UUID) row[0],                           // paymentId
+                (BigDecimal) row[1],                     // amount
+                ((Number) row[2]).longValue(),           // fromUserId
+                // special for psql
+                ((Timestamp) row[3]).toLocalDateTime(),  // Timestamp
+                (String) row[4],                         // description
+                (boolean) row[5],                        // isRepayment
+                row[6] != null ? Arrays.stream(((String) row[6]).split("/"))  // toUserIds (split string)
+                        .map(Long::valueOf)
+                        .collect(Collectors.toList()) : Collections.emptyList()
+        )).collect(Collectors.toList());
+    }
+
 }

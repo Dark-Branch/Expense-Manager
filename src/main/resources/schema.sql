@@ -25,7 +25,7 @@ CREATE TABLE payment (
     room_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
     description TEXT,
-    is_repayment BOOLEAN NOT NULL DEFAULT FALSE,
+    is_repayment BOOLEAN DEFAULT FALSE,
     payment_timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE
 );

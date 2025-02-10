@@ -2,14 +2,10 @@ package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
-import com.bodimTikka.bodimTikka.model.Payment;
-import com.bodimTikka.bodimTikka.model.Room;
-import com.bodimTikka.bodimTikka.model.User;
-import com.bodimTikka.bodimTikka.model.UserInRoom;
-import com.bodimTikka.bodimTikka.repository.PaymentRepository;
-import com.bodimTikka.bodimTikka.repository.RoomRepository;
-import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
-import com.bodimTikka.bodimTikka.repository.UserRepository;
+import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
+import com.bodimTikka.bodimTikka.model.*;
+import com.bodimTikka.bodimTikka.repository.*;
+import com.bodimTikka.bodimTikka.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +15,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +34,11 @@ public class PaymentControllerTest {
     private UserInRoomRepository userInRoomRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentRecordRepository paymentRecordRepository;
+    @Autowired
+    private PaymentService paymentService;
+
 
     private Room room;
     private User payer;
@@ -47,6 +49,8 @@ public class PaymentControllerTest {
     void setUp() {
         userRepository.deleteAll();
         roomRepository.deleteAll();
+        paymentRepository.deleteAll();
+        paymentRecordRepository.deleteAll();
 
         room = roomRepository.save(new Room("Test Room"));
 
@@ -63,14 +67,19 @@ public class PaymentControllerTest {
 
     @Test
     public void shouldCreatePaymentSuccessfully() {
-        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
+        // make sure to cast to long else fked up
+        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(1.00));
 
         ResponseEntity<PaymentResponseDTO> response = restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getRoomId()).isEqualTo(room.getId());
-        assertThat(response.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(100));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        URI locationOfNewPayment = response.getHeaders().getLocation();
+        ResponseEntity<Payment> getResponse = restTemplate
+                .getForEntity(locationOfNewPayment, Payment.class);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1.00));
     }
 
     @Test
@@ -123,11 +132,11 @@ public class PaymentControllerTest {
 
         ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().get("message")).isEqualTo("payer Id does not belong to room");
         assertThat(response.getBody().get("timestamp")).isNotNull();
-        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -137,10 +146,10 @@ public class PaymentControllerTest {
 
         ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("message")).isEqualTo("Recipient Id does not belong to room");
         assertThat(response.getBody().get("timestamp")).isNotNull();
-        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.BAD_REQUEST.value());
     }
 
     @Test
@@ -183,28 +192,25 @@ public class PaymentControllerTest {
 
     @Test
     public void shouldReturnPaymentsForRoom() {
-        Payment payment1 = new Payment();
-        payment1.setRoom(room);
-        payment1.setAmount(BigDecimal.valueOf(50));
-        payment1 = paymentRepository.save(payment1);
+        PaymentRequestDTO request1 = buildPaymentRequest(BigDecimal.valueOf(75));
+        PaymentRequestDTO request2 = buildPaymentRequest(BigDecimal.valueOf(50));
 
-        Payment payment2 = new Payment();
-        payment2.setRoom(room);
-        payment2.setAmount(BigDecimal.valueOf(75));
-        payment2 = paymentRepository.save(payment2);
+        paymentService.createPayment(request1);
+        paymentService.createPayment(request2);
 
-        ResponseEntity<List<Payment>> response = restTemplate.exchange(
+        ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
                 "/payments/room/" + room.getId() + "?limit=20",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
-                new ParameterizedTypeReference<List<Payment>>() {}
+                new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().size()).isEqualTo(2);
-        assertThat(response.getBody().get(0).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(75));
-        assertThat(response.getBody().get(1).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50));
+        // time stamp is ordered desc
+        assertThat(response.getBody().get(0).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(50));
+        assertThat(response.getBody().get(1).getAmount()).isEqualByComparingTo(BigDecimal.valueOf(75));
     }
 
     @Test
@@ -213,11 +219,123 @@ public class PaymentControllerTest {
                 "/payments/room/" + room.getId() + "?limit=5&page=0",
                 HttpMethod.GET,
                 HttpEntity.EMPTY,
-                new ParameterizedTypeReference<List<Payment>>() {}        );
+                new ParameterizedTypeReference<List<Payment>>() {}
+        );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().size()).isEqualTo(0);
     }
 
+    @Test
+    void testGetPaymentLogBetweenUsers_ValidUsersInRoom() {
+        User user1 = userRepository.save(new User("Alice"));
+        User user2 = userRepository.save(new User("Bob"));
+
+        Room room = roomRepository.save(new Room("Test Room"));
+
+        userInRoomRepository.save(new UserInRoom(user1, room));
+        userInRoomRepository.save(new UserInRoom(user2, room));
+
+        Payment payment1 = new Payment(room, BigDecimal.valueOf(100.00));
+        payment1 = paymentRepository.save(payment1);
+        Payment payment2 = new Payment(room, BigDecimal.valueOf(50.00));
+        payment2 = paymentRepository.save(payment2);
+
+        PaymentRecord record1 = PaymentRecord.builder().
+                fromUser(user1).
+                toUser(user2).
+                amount(payment1.getAmount()).
+                isCredit(false).
+                payment(payment1).build();
+        paymentRecordRepository.save(record1);
+        PaymentRecord record2 = PaymentRecord.builder().
+                fromUser(user2).
+                toUser(user1).
+                amount(payment2.getAmount()).
+                isCredit(true).
+                payment(payment2).build();
+        paymentRecordRepository.save(record2);
+
+        ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_NoPayments() {
+        User user1 = userRepository.save(new User("Alice"));
+        User user2 = userRepository.save(new User("Bob"));
+
+        userInRoomRepository.save(new UserInRoom(user1, room));
+        userInRoomRepository.save(new UserInRoom(user2, room));
+
+        ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).isEmpty();
+    }
+
+
+    @Test
+    void testGetPaymentLogBetweenUsers_UserNotInRoom() {
+        User user1 = userRepository.save(new User("Alice"));
+        User user2 = userRepository.save(new User("Bob"));
+
+        userInRoomRepository.save(new UserInRoom(user1, room));
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                HttpMethod.GET,
+                null,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Users do not belong to the room");
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_RoomNotFound() {
+        // non-existing room ID
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/payments/room/99999/users?user1=1&user2=2",
+                HttpMethod.GET,
+                null,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody()).contains("Room not found");
+    }
+
+    @Test
+    void testGetPaymentLogBetweenUsers_MissingUserIds() {
+        // Create a room
+        Room room = roomRepository.save(new Room("Test Room"));
+
+        // Call endpoint without user parameters
+        ResponseEntity<String> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/users",
+                HttpMethod.GET,
+                null,
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody()).contains("Required parameter 'user1' is missing.");
+    }
 }

@@ -2,6 +2,7 @@ package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
+import com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
 import com.bodimTikka.bodimTikka.model.*;
 import com.bodimTikka.bodimTikka.repository.*;
@@ -16,6 +17,7 @@ import org.springframework.http.*;
 
 import java.math.BigDecimal;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -337,5 +339,71 @@ public class PaymentControllerTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).contains("Required parameter 'user1' is missing.");
+    }
+
+    @Test
+    public void shouldReturnEmptyPairListWhenNoPaymentsExist() {
+        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.getForEntity(
+                "/payments/room/" + room.getId() + "/balances",
+                RoomPairBalanceDTO[].class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().length).isEqualTo(0);
+    }
+
+    @Test
+    public void shouldReturnCorrectBalancesAfterSinglePayment() {
+        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(30.00));
+
+        restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
+
+        ResponseEntity<List<RoomPairBalanceDTO>> response = restTemplate.exchange(
+                "/payments/room/" + room.getId() + "/balances",
+                HttpMethod.GET,
+                null,
+                new ParameterizedTypeReference<List<RoomPairBalanceDTO>>() {}
+        );
+
+        System.out.println(response.getBody());
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().size()).isEqualTo(2);
+    }
+
+    @Test
+    public void shouldReturnUpdatedBalancesAfterMultiplePayments() {
+        restTemplate.postForEntity("/payments/create", buildPaymentRequest(BigDecimal.valueOf(30.00)), PaymentResponseDTO.class);
+        restTemplate.postForEntity("/payments/create", buildRepaymentRequest(recipient1, BigDecimal.valueOf(10.00)), PaymentResponseDTO.class);
+
+        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.getForEntity(
+                "/payments/room/" + room.getId() + "/balances",
+                RoomPairBalanceDTO[].class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().length).isEqualTo(2);
+    }
+
+    private PaymentRequestDTO buildRepaymentRequest(User payer, BigDecimal amount) {
+        PaymentRequestDTO request = new PaymentRequestDTO();
+        request.setRoomId(room.getId());
+        request.setPayerId(payer.getId());
+        request.setRecipientIds(List.of(this.payer.getId()));
+        request.setTotalAmount(amount);
+        request.setRepayment(true);
+        return request;
+    }
+
+    @Test
+    public void shouldReturnNotFoundForNonExistentRoom() {
+        ResponseEntity<String> response = restTemplate.getForEntity(
+                "/payments/room/999999/balances",
+                String.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 }

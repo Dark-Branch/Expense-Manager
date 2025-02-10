@@ -24,6 +24,7 @@ public class RoomController {
         return room.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    // TODO: add users to room
     @GetMapping("/{roomId}/users")
     public List<UserDTO> getRoomUsers(@PathVariable Long roomId) {
         return roomService.getRoomUsers(roomId);

@@ -20,6 +20,8 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO.getRoomPairBalanceDTOS;
+
 @Service
 public class PaymentService {
 
@@ -40,8 +42,7 @@ public class PaymentService {
 
     @Transactional
     public Payment createPayment(PaymentRequestDTO paymentRequest) {
-        Room room = roomService.getRoomById(paymentRequest.getRoomId()).orElseThrow(() -> new
-                NotFoundException("Room not found"));
+        Room room = getRoomOrElseThrow(paymentRequest.getRoomId());
 
         List<Long> userIDs = roomService.getRoomUserIDs(room.getId());
         User payer = getPayer(paymentRequest, userIDs);
@@ -107,8 +108,7 @@ public class PaymentService {
     }
 
     public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page) {
-        Room room = roomService.getRoomById(roomId).orElseThrow(() -> new
-                NotFoundException("Room not found"));
+        Room room = getRoomOrElseThrow(roomId);
 
         List<Long> userIds = roomService.getRoomUserIDs(roomId);
         if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
@@ -122,6 +122,12 @@ public class PaymentService {
         Pageable pageable = PageRequest.of(page, limit);
         return paymentRepository.findLastPaymentsByRoomIdAndUsers(roomId, userId1, userId2, pageable);
     }
+
+    private Room getRoomOrElseThrow(Long roomId) {
+        return roomService.getRoomById(roomId).orElseThrow(() -> new
+                NotFoundException("Room not found"));
+    }
+
     private void createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();
 

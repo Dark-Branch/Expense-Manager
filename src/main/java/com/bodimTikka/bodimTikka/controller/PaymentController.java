@@ -1,9 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
-import com.bodimTikka.bodimTikka.DTO.UserPaymentLogDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
+import com.bodimTikka.bodimTikka.DTO.*;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.service.PaymentService;
 import jakarta.validation.Valid;
@@ -25,6 +22,7 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
+    // TODO: update materialized view after create
     // TODO: make get mapping for payment
     @PostMapping("/create")
     public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO paymentRequest, UriComponentsBuilder ucb) {
@@ -60,5 +58,11 @@ public class PaymentController {
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit) {
         return ResponseEntity.ok(paymentService.getPaymentByRoomIdAndUsers(id, user1, user2, limit, page));
+    }
+
+    @GetMapping("/room/{id}/balances")
+    public ResponseEntity<List<RoomPairBalanceDTO>> getPairwiseBalances(
+            @PathVariable Long id) {
+        return ResponseEntity.ok(paymentService.getPairwiseBalances(id));
     }
 }

@@ -2,14 +2,10 @@ package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
-import com.bodimTikka.bodimTikka.model.Payment;
-import com.bodimTikka.bodimTikka.model.Room;
-import com.bodimTikka.bodimTikka.model.User;
-import com.bodimTikka.bodimTikka.model.UserInRoom;
-import com.bodimTikka.bodimTikka.repository.PaymentRepository;
-import com.bodimTikka.bodimTikka.repository.RoomRepository;
-import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
-import com.bodimTikka.bodimTikka.repository.UserRepository;
+import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
+import com.bodimTikka.bodimTikka.model.*;
+import com.bodimTikka.bodimTikka.repository.*;
+import com.bodimTikka.bodimTikka.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +15,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -37,6 +34,11 @@ public class PaymentControllerTest {
     private UserInRoomRepository userInRoomRepository;
     @Autowired
     private PaymentRepository paymentRepository;
+    @Autowired
+    private PaymentRecordRepository paymentRecordRepository;
+    @Autowired
+    private PaymentService paymentService;
+
 
     private Room room;
     private User payer;
@@ -63,14 +65,19 @@ public class PaymentControllerTest {
 
     @Test
     public void shouldCreatePaymentSuccessfully() {
-        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
+        // make sure to cast to long else fked up
+        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(1.00));
 
         ResponseEntity<PaymentResponseDTO> response = restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getRoomId()).isEqualTo(room.getId());
-        assertThat(response.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(100));
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        URI locationOfNewPayment = response.getHeaders().getLocation();
+        ResponseEntity<Payment> getResponse = restTemplate
+                .getForEntity(locationOfNewPayment, Payment.class);
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1.00));
     }
 
     @Test

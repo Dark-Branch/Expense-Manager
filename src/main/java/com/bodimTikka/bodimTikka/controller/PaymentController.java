@@ -7,8 +7,11 @@ import com.bodimTikka.bodimTikka.service.PaymentService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/payments")
@@ -20,10 +23,18 @@ public class PaymentController {
         this.paymentService = paymentService;
     }
 
+    // TODO: make get mapping for payment
     @PostMapping("/create")
-    public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO paymentRequest) {
-        PaymentResponseDTO paymentResponse = paymentService.createPayment(paymentRequest);
-        return ResponseEntity.ok(paymentResponse);
+    public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO paymentRequest, UriComponentsBuilder ucb) {
+        Payment payment = paymentService.createPayment(paymentRequest);
+        URI locationOfNewPayment = ucb.path("/payments/{id}").
+                buildAndExpand(payment.getPaymentId()).toUri();
+        return ResponseEntity.created(locationOfNewPayment).build();
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<Payment> getById(@PathVariable UUID id) {
+        return ResponseEntity.ok(paymentService.getById(id));
     }
 
     @GetMapping

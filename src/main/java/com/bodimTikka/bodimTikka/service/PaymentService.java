@@ -1,8 +1,6 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentRecordDTO;
+import com.bodimTikka.bodimTikka.DTO.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidArgumentException;
 import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
@@ -19,7 +17,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.List;
+import java.sql.Timestamp;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -35,8 +34,13 @@ public class PaymentService {
         this.roomService = roomService;
     }
 
+    // for testing
+    public Payment getById(UUID id){
+        return paymentRepository.findById(id).orElseThrow(() -> new NotFoundException("Payment Not Found"));
+    }
+
     @Transactional
-    public PaymentResponseDTO createPayment(PaymentRequestDTO paymentRequest) {
+    public Payment createPayment(PaymentRequestDTO paymentRequest) {
         Room room = roomService.getRoomById(paymentRequest.getRoomId()).orElseThrow(() -> new
                 NotFoundException("Room not found"));
 
@@ -45,35 +49,19 @@ public class PaymentService {
         List<User> recipients = getRecipients(paymentRequest, userIDs);
 
         Payment payment = makePayment(paymentRequest, room);
-        BigDecimal splitAmount = getSplittedPaymentAmount(paymentRequest, recipients);
-        List<PaymentRecordDTO> paymentRecords = getPaymentRecordDTOS(recipients, payer, splitAmount, payment);
+        BigDecimal splitAmount = getSplitPaymentAmount(paymentRequest, recipients);
 
-        return getPaymentResponseDTO(payment, paymentRecords);
+        createPaymentRecords(recipients, payer, splitAmount, payment);
+        return payment;
     }
 
-    private static PaymentResponseDTO getPaymentResponseDTO(Payment payment, List<PaymentRecordDTO> paymentRecords) {
-        return new PaymentResponseDTO(
-                payment.getPaymentId(),
-                payment.getRoom().getId(),
-                payment.getAmount(),
-                payment.getIsRepayment(),
-                payment.getPaymentTimestamp(),
-                paymentRecords
-        );
+    private void createPaymentRecords(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
+        recipients.forEach(recipient -> {
+            createPaymentRecord(payer, recipient, splitAmount, payment);
+        });
     }
 
-    private List<PaymentRecordDTO> getPaymentRecordDTOS(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
-        List<PaymentRecordDTO> paymentRecords;
-        paymentRecords = recipients.stream()
-                .map(recipient -> {
-                    PaymentRecord record = createPaymentRecord(payer, recipient, splitAmount, payment);
-                    return new PaymentRecordDTO(record.getFromUser().getId(), record.getToUser().getId(), splitAmount, record.getIsCredit());
-                })
-                .collect(Collectors.toList());
-        return paymentRecords;
-    }
-
-    private static BigDecimal getSplittedPaymentAmount(PaymentRequestDTO paymentRequest, List<User> recipients) {
+    private static BigDecimal getSplitPaymentAmount(PaymentRequestDTO paymentRequest, List<User> recipients) {
         BigDecimal splitAmount;
         if (!paymentRequest.isRepayment()) {
             splitAmount = paymentRequest.getTotalAmount().divide(BigDecimal.valueOf(recipients.size()), RoundingMode.HALF_UP);

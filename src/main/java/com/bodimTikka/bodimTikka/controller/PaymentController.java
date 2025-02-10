@@ -1,5 +1,7 @@
 package com.bodimTikka.bodimTikka.controller;
 
+import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
+import com.bodimTikka.bodimTikka.DTO.UserPaymentLogDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
 import com.bodimTikka.bodimTikka.model.Payment;
@@ -43,11 +45,20 @@ public class PaymentController {
     }
 
     @GetMapping("/room/{id}")
-    public ResponseEntity<List<Payment>> getPaymentByRoomId(
+    public ResponseEntity<List<RoomPaymentLogDTO>> getPaymentByRoomId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(paymentService.getPaymentByRoomId(id, limit, page));
+        return ResponseEntity.ok(paymentService.getLastRoomPayments(id, limit, page));
     }
 
+    @GetMapping("/room/{id}/users")
+    public ResponseEntity<List<UserPaymentLogDTO>> getPaymentByRoomIdAndUsers(
+            @PathVariable Long id,
+            @RequestParam(required = true) Long user1,
+            @RequestParam(required = true) Long user2,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int limit) {
+        return ResponseEntity.ok(paymentService.getPaymentByRoomIdAndUsers(id, user1, user2, limit, page));
+    }
 }

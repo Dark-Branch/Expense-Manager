@@ -2,7 +2,6 @@ package com.bodimTikka.bodimTikka.service;
 
 import com.bodimTikka.bodimTikka.DTO.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidArgumentException;
-import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.model.PaymentRecord;
@@ -106,6 +105,14 @@ public class PaymentService {
         return paymentRepository.findLastPaymentsByRoomId(roomId, pageable);
     }
 
+    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page){
+//        if (roomService.isUsersBelongToRoom(Long roomId))
+//            throw new InvalidArgumentException("Users does not belong to the Room");
+        Pageable pageable = PageRequest.of(page, limit);
+        // TODO: check for roomId
+        return paymentRepository.findLastPaymentsByRoomIdAndUsers(roomId, userId1, userId2, pageable);
+    }
+
     private PaymentRecord createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();
 
@@ -140,4 +147,36 @@ public class PaymentService {
             return getPaymentResponseDTO(payment, records);
         }).collect(Collectors.toList());
     }
+
+    // TODO: check both users are same
+    private static PaymentResponseDTO getPaymentResponseDTO(Payment payment, List<PaymentRecordDTO> paymentRecords) {
+        return new PaymentResponseDTO(
+                payment.getPaymentId(),
+                payment.getRoom().getId(),
+                payment.getAmount(),
+                payment.getIsRepayment(),
+                payment.getPaymentTimestamp(),
+                paymentRecords
+        );
+    }
+
+    public List<RoomPaymentLogDTO> getLastRoomPayments(Long roomId, int limit, int page) {
+        // native query, so no pageable
+        int offset = page * limit;
+        List<Object[]> results = paymentRepository.findLastRoomPayments(roomId, limit, offset);
+
+        return results.stream().map(row -> new RoomPaymentLogDTO(
+                (UUID) row[0],                           // paymentId
+                (BigDecimal) row[1],                     // amount
+                ((Number) row[2]).longValue(),           // fromUserId
+                // special for psql
+                ((Timestamp) row[3]).toLocalDateTime(),  // Timestamp
+                (String) row[4],                         // description
+                (boolean) row[5],                        // isRepayment
+                row[6] != null ? Arrays.stream(((String) row[6]).split("/"))  // toUserIds (split string)
+                        .map(Long::valueOf)
+                        .collect(Collectors.toList()) : Collections.emptyList()
+        )).collect(Collectors.toList());
+    }
+
 }

@@ -32,4 +32,9 @@ public class Payment {
 
     @Column(name = "payment_timestamp", columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime paymentTimestamp = LocalDateTime.now();
+
+    public Payment(Room room, BigDecimal amount) {
+        this.room = room;
+        this.amount = amount;
+    }
 }

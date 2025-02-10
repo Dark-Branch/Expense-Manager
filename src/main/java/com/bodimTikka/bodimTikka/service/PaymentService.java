@@ -188,4 +188,13 @@ public class PaymentService {
         )).collect(Collectors.toList());
     }
 
+    @Transactional
+    public List<RoomPairBalanceDTO> getPairwiseBalances(Long roomId) {
+        Room room = getRoomOrElseThrow(roomId);
+        // crucial because materialized view
+        paymentRecordRepository.refreshMaterializedView();
+
+        List<Object[]> results = paymentRecordRepository.findPairwiseBalancesByRoom(roomId);
+        return getRoomPairBalanceDTOS(results);
+    }
 }

@@ -34,6 +34,7 @@ CREATE INDEX idx_payment_timestamp ON payment(payment_timestamp DESC);
 
 CREATE TABLE payment_record (
     id SERIAL PRIMARY KEY,
+    -- from_id < to_id
     from_user_id INT NOT NULL,
     to_user_id INT NOT NULL,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
@@ -76,3 +77,24 @@ SELECT
     pr.is_credit
 FROM payment p
 LEFT JOIN payment_record pr ON p.payment_id = pr.payment_id;
+
+-- return balances to be paid
+CREATE MATERIALIZED VIEW room_pair_balances_to_pay AS
+WITH pair_balance AS (
+    SELECT
+        u1.room_id,Performance Optimizations
+        LEAST(pr.from_user_id, pr.to_user_id) AS from_user,
+        GREATEST(pr.from_user_id, pr.to_user_id) AS to_user,
+        SUM(CASE
+            WHEN pr.is_credit THEN pr.amount
+            ELSE -pr.amount
+        END) AS balance
+    FROM payment_record pr
+    JOIN user_in_room u1 ON pr.from_user_id = u1.user_id
+    JOIN user_in_room u2 ON pr.to_user_id = u2.user_id
+    WHERE u1.room_id = u2.room_id
+    GROUP BY u1.room_id, from_user, to_user
+)
+
+CREATE INDEX idx_room_pair_balances_room ON room_pair_balances_to_pay(room_id);
+CREATE INDEX idx_room_pair_balances_users ON room_pair_balances_to_pay(from_user, to_user);

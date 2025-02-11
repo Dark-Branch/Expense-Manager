@@ -1,8 +1,10 @@
 package com.bodimTikka.bodimTikka.controller;
 
+import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
+import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -28,6 +30,13 @@ public class RoomController {
     @GetMapping("/{roomId}/users")
     public List<UserDTO> getRoomUsers(@PathVariable Long roomId) {
         return roomService.getRoomUsers(roomId);
+    }
+
+    @PostMapping("/{roomId}/users")
+    public ResponseEntity<UserInRoom> addUsersToRoom(@RequestParam Long senderId, @PathVariable Long roomId, @RequestBody AddUserRequestDTO request){
+        ///  TODO: change to get sender id from principal
+        UserInRoom userInRoom = roomService.createUserInRoom(senderId, roomId, request);
+        return ResponseEntity.ok(userInRoom);
     }
 
     @GetMapping("/roomer/{userId}")

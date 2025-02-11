@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.Handler;
 
-import com.bodimTikka.bodimTikka.exceptions.InvalidArgumentException;
+import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import org.springframework.http.HttpStatus;
@@ -29,8 +29,8 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
     }
 
-    @ExceptionHandler(InvalidArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleInvalidArgumentException(InvalidArgumentException ex) {
+    @ExceptionHandler(InvalidRequestException.class)
+    public ResponseEntity<Map<String, Object>> handleInvalidArgumentException(InvalidRequestException ex) {
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.BAD_REQUEST.value());

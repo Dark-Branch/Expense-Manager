@@ -1,7 +1,9 @@
 package com.bodimTikka.bodimTikka.service;
 
+import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -21,7 +23,10 @@ public class RoomService {
     private RoomRepository roomRepository;
     @Autowired
     private UserInRoomRepository userInRoomRepository;
+    @Autowired
+    private UserService userService;
 
+    // TODO: handle null case?
     public List<UserDTO> getRoomUsers(Long roomId) {
         List<UserInRoom> usersInRoom = userInRoomRepository.findUsersByRoomId(roomId);
         return usersInRoom.stream()
@@ -43,6 +48,51 @@ public class RoomService {
         return rooms.stream()
                 .map(room -> new RoomDTO(room.getId(), room.getName()))
                 .collect(Collectors.toList());
+    }
+
+    public UserInRoom createUserInRoom(Long senderId, Long roomId, AddUserRequestDTO request){
+        // TODO: maybe checking for if user have the wanted role
+        String name = request.getName();
+        boolean isRegistered = request.getIsRegistered();
+        Long userId = request.getUserId();
+
+        verify(senderId, roomId, name, isRegistered, userId);
+
+        UserInRoom userInRoom = new UserInRoom();
+        userInRoom.setUser(userId != null ? new User(userId) : null);
+        userInRoom.setRoom(new Room(roomId));
+        userInRoom.setName(name);
+        userInRoom.setRegistered(isRegistered);
+        userInRoom = userInRoomRepository.save(userInRoom);
+        System.out.println(userInRoom.getName());
+        return userInRoom;
+    }
+
+    private void verify(Long senderId, Long roomId, String name, boolean isRegistered, Long userId) {
+        if (!userInRoomRepository.existsByUserIdAndRoomId(senderId, roomId)){
+            throw new InvalidRequestException("Current user doesn't belong to the room");
+        }
+
+        if (name == null || name.trim().isEmpty()) {
+            throw new InvalidRequestException("Name cannot be empty");
+        }
+
+        if (isRegistered) {
+            if (userId == null) {
+                throw new InvalidRequestException("User ID is required for registered users");
+            }
+            if (!userService.existsById(userId)) {
+                throw new InvalidRequestException("User with ID " + userId + " does not exist");
+            }
+        } else {
+            if (userId != null) {
+                throw new InvalidRequestException("User ID must be null for unregistered users");
+            }
+        }
+
+        if (isRegistered && userInRoomRepository.existsByUserIdAndRoomId(userId, roomId)) {
+            throw new InvalidRequestException("User is already in the room");
+        }
     }
 
     public Room saveRoom(Room room) {

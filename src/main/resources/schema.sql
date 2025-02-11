@@ -12,9 +12,12 @@ CREATE TABLE room (
 
 CREATE TABLE user_in_room (
     id SERIAL PRIMARY KEY,
-    user_id INT NOT NULL,
+    user_id INT,                         -- Nullable for unregistered users
     room_id INT NOT NULL,
+    name VARCHAR(255) NOT NULL,          -- Display name for the room
     is_still_a_member BOOLEAN DEFAULT TRUE,
+    is_admin BOOLEAN DEFAULT FALSE,
+    is_registered BOOLEAN DEFAULT FALSE,
     FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE,
     FOREIGN KEY (room_id) REFERENCES room(id) ON DELETE CASCADE,
     UNIQUE (user_id, room_id)       -- Ensures a user can only be added once to a room
@@ -82,7 +85,7 @@ LEFT JOIN payment_record pr ON p.payment_id = pr.payment_id;
 CREATE MATERIALIZED VIEW room_pair_balances_to_pay AS
 WITH pair_balance AS (
     SELECT
-        u1.room_id,Performance Optimizations
+        u1.room_id,
         LEAST(pr.from_user_id, pr.to_user_id) AS from_user,
         GREATEST(pr.from_user_id, pr.to_user_id) AS to_user,
         SUM(CASE
@@ -95,6 +98,7 @@ WITH pair_balance AS (
     WHERE u1.room_id = u2.room_id
     GROUP BY u1.room_id, from_user, to_user
 )
+SELECT * FROM pair_balance;
 
-CREATE INDEX idx_room_pair_balances_room ON room_pair_balances_to_pay(room_id);
-CREATE INDEX idx_room_pair_balances_users ON room_pair_balances_to_pay(from_user, to_user);
+--CREATE INDEX idx_room_pair_balances_room ON room_pair_balances_to_pay(room_id);
+--CREATE INDEX idx_room_pair_balances_users ON room_pair_balances_to_pay(from_user, to_user);

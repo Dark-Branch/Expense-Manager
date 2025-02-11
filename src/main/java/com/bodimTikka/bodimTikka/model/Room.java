@@ -24,4 +24,8 @@ public class Room {
     public Room(String name) {
         this.name = name;
     }
+
+    public Room(Long roomId) {
+        this.id = roomId;
+    }
 }

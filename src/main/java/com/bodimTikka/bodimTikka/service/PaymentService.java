@@ -1,7 +1,7 @@
 package com.bodimTikka.bodimTikka.service;
 
 import com.bodimTikka.bodimTikka.DTO.*;
-import com.bodimTikka.bodimTikka.exceptions.InvalidArgumentException;
+import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.model.PaymentRecord;
@@ -104,7 +104,7 @@ public class PaymentService {
 
     private static void verifyContains(Long value, List<Long> target, String message) {
         if (!target.contains(value))
-            throw new InvalidArgumentException(message);
+            throw new InvalidRequestException(message);
     }
 
     public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page) {
@@ -112,11 +112,11 @@ public class PaymentService {
 
         List<Long> userIds = roomService.getRoomUserIDs(roomId);
         if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
-            throw new InvalidArgumentException("Users do not belong to the room");
+            throw new InvalidRequestException("Users do not belong to the room");
         }
 
         if (page < 0 || limit <= 0) {
-            throw new InvalidArgumentException("Invalid pagination parameters");
+            throw new InvalidRequestException("Invalid pagination parameters");
         }
 
         Pageable pageable = PageRequest.of(page, limit);

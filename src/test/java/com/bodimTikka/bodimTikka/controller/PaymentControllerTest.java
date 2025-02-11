@@ -60,9 +60,9 @@ public class PaymentControllerTest {
         recipient1 = userRepository.save(new User("Recipient1"));
         recipient2 = userRepository.save(new User("Recipient2"));
 
-        UserInRoom first = new UserInRoom(payer, room);
-        UserInRoom second = new UserInRoom(recipient1, room);
-        UserInRoom third = new UserInRoom(recipient2, room);
+        UserInRoom first = new UserInRoom(payer, room, "payer");
+        UserInRoom second = new UserInRoom(recipient1, room, "eka");
+        UserInRoom third = new UserInRoom(recipient2, room, "deka");
 
         userInRoomRepository.saveAll(List.of(first, second, third));
     }
@@ -236,8 +236,8 @@ public class PaymentControllerTest {
 
         Room room = roomRepository.save(new Room("Test Room"));
 
-        userInRoomRepository.save(new UserInRoom(user1, room));
-        userInRoomRepository.save(new UserInRoom(user2, room));
+        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
+        userInRoomRepository.save(new UserInRoom(user2, room, "two"));
 
         Payment payment1 = new Payment(room, BigDecimal.valueOf(100.00));
         payment1 = paymentRepository.save(payment1);
@@ -276,8 +276,8 @@ public class PaymentControllerTest {
         User user1 = userRepository.save(new User("Alice"));
         User user2 = userRepository.save(new User("Bob"));
 
-        userInRoomRepository.save(new UserInRoom(user1, room));
-        userInRoomRepository.save(new UserInRoom(user2, room));
+        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
+        userInRoomRepository.save(new UserInRoom(user2, room, "two"));
 
         ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
                 "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
@@ -297,7 +297,7 @@ public class PaymentControllerTest {
         User user1 = userRepository.save(new User("Alice"));
         User user2 = userRepository.save(new User("Bob"));
 
-        userInRoomRepository.save(new UserInRoom(user1, room));
+        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
 
         ResponseEntity<String> response = restTemplate.exchange(
                 "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),

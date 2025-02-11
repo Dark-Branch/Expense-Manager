@@ -101,6 +101,7 @@ class RoomControllerTest {
         UserInRoom userInRoom1 = new UserInRoom();
         userInRoom1.setRoom(testRoom1);
         userInRoom1.setUser(user);
+        userInRoom1.setName("yow");
         //TODO: hide is still a member part
         userInRoom1.setStillAMember(true);
         userInRoom1 = userInRoomRepository.save(userInRoom1);
@@ -108,6 +109,7 @@ class RoomControllerTest {
         UserInRoom userInRoom2 = new UserInRoom();
         userInRoom2.setRoom(testRoom2);
         userInRoom2.setUser(user);
+        userInRoom2.setName("yo");
         userInRoom2.setStillAMember(true);
         userInRoom2 = userInRoomRepository.save(userInRoom2);
 

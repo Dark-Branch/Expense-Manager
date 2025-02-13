@@ -54,18 +54,23 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    public UserInRoom createUserInRoom(Long senderId, Long roomId, AddUserRequestDTO request){
-        // TODO: maybe checking for if user have the wanted role
+    public UserInRoom createUserInRoom(Long roomId, AddUserRequestDTO request, String email){
+        Long senderId = getUserByEmailIfAdmin(roomId, email);
         String name = request.getName();
         boolean isRegistered = request.getIsRegistered();
         Long userId = request.getUserId();
 
         verify(senderId, roomId, name, isRegistered, userId);
 
+        return saveUserToRoom(roomId, userId, name, isRegistered);
+    }
+
+    private UserInRoom saveUserToRoom(Long roomId, Long userId, String name, boolean isRegistered) {
         UserInRoom userInRoom = new UserInRoom();
         userInRoom.setUser(userId != null ? new User(userId) : null);
         userInRoom.setRoom(new Room(roomId));
         userInRoom.setName(name);
+        userInRoom.setStillAMember(true);
         userInRoom.setRegistered(isRegistered);
         userInRoom = userInRoomRepository.save(userInRoom);
         return userInRoom;
@@ -116,18 +121,23 @@ public class RoomService {
     }
 
     public void deleteRoom(Long roomId, String email) {
-        System.out.println("hi");
-
-        UserProjection userProjection = userService.findUserProjectionByEmail(email)
-                .orElseThrow(() -> new NotFoundException("User not found."));
-        System.out.println("hi");
-
-        if (!userInRoomRepository.isUserAdmin(userProjection.getId(), roomId)){
-            System.out.println("hi");
-            throw new UnauthorizedException("User is not an admin of this room.");
-        }
+        getUserByEmailIfAdmin(roomId, email);
 
         roomRepository.deleteById(roomId);
+    }
+
+    private Long getUserByEmailIfAdmin(Long roomId, String email) {
+        // FIXME: is this best error
+        if (!roomRepository.existsById(roomId)){
+            throw new InvalidRequestException("Invalid room ID");
+        }
+        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."));
+
+        if (!userInRoomRepository.isUserAdmin(userProjection.getId(), roomId)){
+            throw new UnauthorizedException("User is not an admin of this room.");
+        }
+        return userProjection.getId();
     }
 
     public boolean existsById(Long roomId) {

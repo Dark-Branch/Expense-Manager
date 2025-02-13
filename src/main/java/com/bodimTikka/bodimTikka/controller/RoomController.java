@@ -36,9 +36,8 @@ public class RoomController {
     }
 
     @PostMapping("/{roomId}/users")
-    public ResponseEntity<UserInRoom> addUsersToRoom(@RequestParam Long senderId, @PathVariable Long roomId, @RequestBody AddUserRequestDTO request){
-        ///  TODO: change to get sender id from principal
-        UserInRoom userInRoom = roomService.createUserInRoom(senderId, roomId, request);
+    public ResponseEntity<UserInRoom> addUsersToRoom(@PathVariable Long roomId, @RequestBody AddUserRequestDTO request, Principal principal){
+        UserInRoom userInRoom = roomService.createUserInRoom(roomId, request, principal.getName());
         return ResponseEntity.ok(userInRoom);
     }
 

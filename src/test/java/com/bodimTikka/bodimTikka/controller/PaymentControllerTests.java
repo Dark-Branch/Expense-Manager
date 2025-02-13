@@ -365,7 +365,6 @@ public class PaymentControllerTests {
                 new ParameterizedTypeReference<List<RoomPairBalanceDTO>>() {}
         );
 
-        System.out.println(response.getBody());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().size()).isEqualTo(2);

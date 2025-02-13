@@ -35,7 +35,6 @@ public class GlobalExceptionHandler {
     // FIXME: for testing
     @ExceptionHandler(RuntimeException.class)
     public ResponseEntity<Map<String, Object>> runtimeException(RuntimeException ex) {
-        System.out.println(ex.getMessage());
         Map<String, Object> response = new HashMap<>();
         response.put("timestamp", LocalDateTime.now());
         response.put("status", HttpStatus.NOT_FOUND.value());

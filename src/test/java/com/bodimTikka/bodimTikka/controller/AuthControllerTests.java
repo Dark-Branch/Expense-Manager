@@ -95,7 +95,6 @@ public class AuthControllerTests {
                 new LoginRequest("john@test.com", "password"),
                 String.class);
 
-        System.out.println(loginResponse.getBody());
         String token = extractToken(loginResponse.getBody());
 
         // protected resource

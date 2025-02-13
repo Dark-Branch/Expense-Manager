@@ -3,7 +3,9 @@ package com.bodimTikka.bodimTikka.service;
 import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
+import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -11,7 +13,10 @@ import com.bodimTikka.bodimTikka.repository.RoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -95,8 +100,17 @@ public class RoomService {
         }
     }
 
-    public Room saveRoom(Room room) {
-        return roomRepository.save(room);
+    public Room createRoomForUser(Room room, String email) {
+        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."));
+
+        if (room.getName() == null || room.getName().trim().isEmpty()) {
+            throw new InvalidRequestException("Room name cannot be null or empty.");
+        }
+
+        Room createdRoom = roomRepository.save(room);
+        userInRoomRepository.addUserToRoom(userProjection.getId(), createdRoom.getId(), userProjection.getName());
+        return createdRoom;
     }
 
     public void deleteRoom(Long id) {

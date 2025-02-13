@@ -4,22 +4,25 @@ import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
+import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/rooms")
+@RequestMapping("/api/rooms")
 public class RoomController {
     @Autowired
     private RoomService roomService;
 
+    // TODO: is this really needed
     @GetMapping("/{id}")
     public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
         Optional<Room> room = roomService.getRoomById(id);
@@ -46,8 +49,12 @@ public class RoomController {
     }
 
     @PostMapping
-    public Room createRoom(@RequestBody Room room) {
-        return roomService.saveRoom(room);
+    public ResponseEntity<?> createRoom(@RequestBody Room room, Principal principal) {
+        String email = principal.getName();
+
+        Room createdRoom = roomService.createRoomForUser(room, email);
+
+        return ResponseEntity.ok(createdRoom);
     }
 
     @DeleteMapping("/{id}")

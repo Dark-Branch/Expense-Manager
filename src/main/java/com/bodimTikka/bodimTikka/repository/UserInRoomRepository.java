@@ -2,8 +2,10 @@ package com.bodimTikka.bodimTikka.repository;
 
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -16,4 +18,9 @@ public interface UserInRoomRepository extends JpaRepository<UserInRoom, Long> {
     List<Long> findUserIdsByRoomId(@Param("roomId") Long roomId);
 
     Boolean existsByUserIdAndRoomId(Long userId, Long roomId);
+
+    @Modifying
+    @Transactional
+    @Query(value = "INSERT INTO user_in_room (user_id, room_id, name) VALUES (:userId, :roomId, :name)", nativeQuery = true)
+    void addUserToRoom(@Param("userId") Long userId, @Param("roomId") Long roomId, @Param("name") String name);
 }

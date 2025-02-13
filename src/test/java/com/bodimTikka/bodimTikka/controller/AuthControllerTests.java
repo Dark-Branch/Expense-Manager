@@ -104,7 +104,7 @@ public class AuthControllerTests {
         HttpEntity<?> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> protectedResponse = restTemplate.exchange(
-                "/payments",
+                "/api/payments",
                 HttpMethod.GET,
                 entity,
                 String.class
@@ -120,7 +120,7 @@ public class AuthControllerTests {
         HttpEntity<?> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                "/payments",
+                "/api/payments",
                 HttpMethod.GET,
                 entity,
                 String.class
@@ -151,7 +151,7 @@ public class AuthControllerTests {
         assertThat(response3.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
 
-    private String extractToken(String responseBody) {
+    static String extractToken(String responseBody) {
         return responseBody.split("\"token\":\"")[1].split("\"")[0];
     }
 

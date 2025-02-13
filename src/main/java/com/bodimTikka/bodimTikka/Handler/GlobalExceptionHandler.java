@@ -3,6 +3,7 @@ package com.bodimTikka.bodimTikka.Handler;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
+import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -58,6 +59,16 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
 
         return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(UnauthorizedException.class)
+    public ResponseEntity<Map<String, Object>> handleUnauthorizedException(UnauthorizedException ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("timestamp", LocalDateTime.now());
+        response.put("status", HttpStatus.BAD_REQUEST.value());
+        response.put("message", ex.getMessage());
+
+        return new ResponseEntity<>(response, HttpStatus.UNAUTHORIZED);
     }
 
     @ExceptionHandler(MissingServletRequestParameterException.class)

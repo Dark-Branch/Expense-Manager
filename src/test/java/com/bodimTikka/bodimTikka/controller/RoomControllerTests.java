@@ -18,6 +18,7 @@ import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.*;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -54,33 +55,41 @@ class RoomControllerTests {
         testRoom = new Room();
         testRoom.setName("Test Room");
 
-        ResponseEntity<Room> response = restTemplate.postForEntity(BaseURL, testRoom, Room.class);
-        testRoom = response.getBody();
+        testRoom = roomRepository.save(testRoom);
     }
 
     private void setupSignedUserAndGetToken() {
         user = new User();
         user.setName("test_user");
         user.setEmail("example@example.com");
-        user.setPassword("password");
+        // need to use in login req
+        String password = "password";
+        user.setPassword(password);
 
         SignupRequest request = SignupRequest.builder()
                 .email(user.getEmail())
                 .name(user.getName())
                 .password(user.getPassword())
                 .build();
-        authService.registerUser(request);
+        user = authService.registerUser(request);
 
         ResponseEntity<String> loginResponse = restTemplate.postForEntity(
                 "/api/auth/login",
                 LoginRequest.builder()
                         .email(user.getEmail())
-                        .password(user.getPassword())
+                        .password(password)
                         .build(),
                 String.class
         );
         assertThat(loginResponse.getBody()).isNotNull();
         token = AuthControllerTests.extractToken(loginResponse.getBody());
+    }
+
+    private HttpHeaders getHttpHeadersWithToken() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth(token);
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        return headers;
     }
 
     @Disabled
@@ -101,14 +110,12 @@ class RoomControllerTests {
 
     @Test
     void testCreateRoom() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setBearerAuth(token);
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
         Room newRoom = new Room();
         newRoom.setName("New Test Room");
 
+        HttpHeaders headers = getHttpHeadersWithToken();
         HttpEntity<Room> entity = new HttpEntity<>(newRoom, headers);
+
         ResponseEntity<Room> response = restTemplate.exchange(BaseURL, HttpMethod.POST, entity, Room.class);
 
         System.out.println(response.getBody());
@@ -117,27 +124,82 @@ class RoomControllerTests {
         assertThat(response.getBody().getName()).isEqualTo(newRoom.getName());
     }
 
-
+    // TODO: test without auth
     @Test
     void testDeleteRoom() {
-        ResponseEntity<Void> response = restTemplate.exchange("/rooms/" + testRoom.getId(), HttpMethod.DELETE, HttpEntity.EMPTY, Void.class);
+        addUserAndRoomRecordToUserInRoom(testRoom);
+        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpEntity<Room> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<Void> response = restTemplate.exchange(BaseURL + "/" + testRoom.getId(), HttpMethod.DELETE, entity, Void.class);
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+    }
+
+    private void addUserAndRoomRecordToUserInRoom(Room testRoom) {
+        UserInRoom userInRoom = new UserInRoom();
+        userInRoom.setRoom(testRoom);
+        userInRoom.setUser(user);
+        userInRoom.setName("yow");
+        userInRoom.setStillAMember(true);
+        userInRoom.setAdmin(true);
+        userInRoom = userInRoomRepository.save(userInRoom);
+    }
+
+    @Disabled("write this")
+    @Test
+    void testDeleteRoom_UserNotAdmin() {
+        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                BaseURL + "/" + testRoom.getId(),
+                HttpMethod.DELETE,
+                entity,
+                Map.class
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNAUTHORIZED);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().get("error")).isEqualTo("User is not an admin of this room.");
     }
 
     @Test
     void testGetRoomUsers() {
-        ResponseEntity<List> response = restTemplate.getForEntity("/rooms/" + testRoom.getId() + "/users", List.class);
+        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpEntity<Room> entity = new HttpEntity<>(testRoom, headers);
+
+        ResponseEntity<List> response = restTemplate.exchange(BaseURL + "/" + testRoom.getId() + "/users", HttpMethod.GET, entity, List.class);
+
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
     }
 
     @Test
     void testGetRoomsByUserId_ValidRoomerId() {
-        User user = new User("user");
-        user = userRepository.save(user);
-
         Room testRoom1 = new Room("Test Room 1");
         Room testRoom2 = new Room("Test Room 2");
+
+        addUserToTwoRoomsUsingRepositories(testRoom1, testRoom2);
+
+        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<List<RoomDTO>> response = restTemplate.exchange(
+                BaseURL + "/roomer/" + user.getId(),
+                HttpMethod.GET,
+                entity,
+                new ParameterizedTypeReference<List<RoomDTO>>() {}
+        );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody()).hasSize(2);
+        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 1");
+        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 2");
+    }
+
+    private void addUserToTwoRoomsUsingRepositories(Room testRoom1, Room testRoom2) {
         testRoom1 = roomRepository.save(testRoom1);
         testRoom2 = roomRepository.save(testRoom2);
 
@@ -155,24 +217,14 @@ class RoomControllerTests {
         userInRoom2.setName("yo");
         userInRoom2.setStillAMember(true);
         userInRoom2 = userInRoomRepository.save(userInRoom2);
-
-        ResponseEntity<List<RoomDTO>> response = restTemplate.exchange(
-                "/rooms/roomer/" + user.getId(),
-                HttpMethod.GET,
-                null,
-                new ParameterizedTypeReference<List<RoomDTO>>() {}
-        );
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 1");
-        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 2");
     }
 
     @Test
     void testGetRoomByRoomerId_InvalidRoomerId() {
-        ResponseEntity<Room> response = restTemplate.getForEntity("/rooms/roomer/99999", Room.class);
+        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<Room> response = restTemplate.exchange(BaseURL + "/roomer/99999", HttpMethod.GET, entity, Room.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
     }
 

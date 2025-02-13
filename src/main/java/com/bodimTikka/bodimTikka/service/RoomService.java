@@ -6,6 +6,7 @@ import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
+import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -13,9 +14,7 @@ import com.bodimTikka.bodimTikka.repository.RoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -69,7 +68,6 @@ public class RoomService {
         userInRoom.setName(name);
         userInRoom.setRegistered(isRegistered);
         userInRoom = userInRoomRepository.save(userInRoom);
-        System.out.println(userInRoom.getName());
         return userInRoom;
     }
 
@@ -117,8 +115,19 @@ public class RoomService {
         return createdRoom;
     }
 
-    public void deleteRoom(Long id) {
-        roomRepository.deleteById(id);
+    public void deleteRoom(Long roomId, String email) {
+        System.out.println("hi");
+
+        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."));
+        System.out.println("hi");
+
+        if (!userInRoomRepository.isUserAdmin(userProjection.getId(), roomId)){
+            System.out.println("hi");
+            throw new UnauthorizedException("User is not an admin of this room.");
+        }
+
+        roomRepository.deleteById(roomId);
     }
 
     public boolean existsById(Long roomId) {

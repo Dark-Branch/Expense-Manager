@@ -3,7 +3,10 @@ package com.bodimTikka.bodimTikka.service;
 import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
+import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
+import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
@@ -12,6 +15,7 @@ import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -50,21 +54,25 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    public UserInRoom createUserInRoom(Long senderId, Long roomId, AddUserRequestDTO request){
-        // TODO: maybe checking for if user have the wanted role
+    public UserInRoom createUserInRoom(Long roomId, AddUserRequestDTO request, String email){
+        Long senderId = getUserByEmailIfAdmin(roomId, email);
         String name = request.getName();
         boolean isRegistered = request.getIsRegistered();
         Long userId = request.getUserId();
 
         verify(senderId, roomId, name, isRegistered, userId);
 
+        return saveUserToRoom(roomId, userId, name, isRegistered);
+    }
+
+    private UserInRoom saveUserToRoom(Long roomId, Long userId, String name, boolean isRegistered) {
         UserInRoom userInRoom = new UserInRoom();
         userInRoom.setUser(userId != null ? new User(userId) : null);
         userInRoom.setRoom(new Room(roomId));
         userInRoom.setName(name);
+        userInRoom.setStillAMember(true);
         userInRoom.setRegistered(isRegistered);
         userInRoom = userInRoomRepository.save(userInRoom);
-        System.out.println(userInRoom.getName());
         return userInRoom;
     }
 
@@ -95,12 +103,41 @@ public class RoomService {
         }
     }
 
-    public Room saveRoom(Room room) {
-        return roomRepository.save(room);
+    public Room createRoomForUser(Room room, String email) {
+        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."));
+
+        if (room.getName() == null || room.getName().trim().isEmpty()) {
+            throw new InvalidRequestException("Room name cannot be null or empty.");
+        }
+
+        Room createdRoom = roomRepository.save(room);
+        Long userId = userProjection.getId();
+        Long roomId = createdRoom.getId();
+        userInRoomRepository.addUserToRoom(userId, roomId, userProjection.getName());
+        userInRoomRepository.addAdminUser(userId, roomId);
+
+        return createdRoom;
     }
 
-    public void deleteRoom(Long id) {
-        roomRepository.deleteById(id);
+    public void deleteRoom(Long roomId, String email) {
+        getUserByEmailIfAdmin(roomId, email);
+
+        roomRepository.deleteById(roomId);
+    }
+
+    private Long getUserByEmailIfAdmin(Long roomId, String email) {
+        // FIXME: is this best error
+        if (!roomRepository.existsById(roomId)){
+            throw new InvalidRequestException("Invalid room ID");
+        }
+        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."));
+
+        if (!userInRoomRepository.isUserAdmin(userProjection.getId(), roomId)){
+            throw new UnauthorizedException("User is not an admin of this room.");
+        }
+        return userProjection.getId();
     }
 
     public boolean existsById(Long roomId) {

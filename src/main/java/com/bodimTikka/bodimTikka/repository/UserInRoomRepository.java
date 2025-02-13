@@ -23,4 +23,10 @@ public interface UserInRoomRepository extends JpaRepository<UserInRoom, Long> {
     @Transactional
     @Query(value = "INSERT INTO user_in_room (user_id, room_id, name) VALUES (:userId, :roomId, :name)", nativeQuery = true)
     void addUserToRoom(@Param("userId") Long userId, @Param("roomId") Long roomId, @Param("name") String name);
+
+    @Modifying
+    @Transactional
+    @Query("UPDATE UserInRoom uir SET uir.isAdmin = TRUE, uir.isRegistered = TRUE WHERE uir.user.id = :userId AND uir.room.id = :roomId")
+    void addAdminUser(@Param("userId") Long userId, @Param("roomId") Long roomId);
+
 }

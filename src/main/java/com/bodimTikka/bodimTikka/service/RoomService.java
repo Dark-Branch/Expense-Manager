@@ -109,7 +109,11 @@ public class RoomService {
         }
 
         Room createdRoom = roomRepository.save(room);
-        userInRoomRepository.addUserToRoom(userProjection.getId(), createdRoom.getId(), userProjection.getName());
+        Long userId = userProjection.getId();
+        Long roomId = createdRoom.getId();
+        userInRoomRepository.addUserToRoom(userId, roomId, userProjection.getName());
+        userInRoomRepository.addAdminUser(userId, roomId);
+
         return createdRoom;
     }
 

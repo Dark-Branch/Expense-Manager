@@ -17,14 +17,13 @@ import org.springframework.http.*;
 
 import java.math.BigDecimal;
 import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-public class PaymentControllerTest {
+public class PaymentControllerTests {
 
     @Autowired
     private TestRestTemplate restTemplate;

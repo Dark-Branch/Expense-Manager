@@ -9,6 +9,7 @@ import com.bodimTikka.bodimTikka.repository.RoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserInRoomRepository;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,12 +21,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.HttpStatus;
 
 import java.util.List;
-import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-class RoomControllerTest {
+class RoomControllerTests {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -291,5 +291,24 @@ class RoomControllerTest {
                 "/rooms/999/users"  + "?senderId=" + user1.getId(), request, String.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+    }
+
+    // TODO: auth here
+    @Disabled
+    @Test
+    void testAssignAdmin_Valid() {
+        // Create and add a user to the room
+        User user = new User("John");
+        user = userRepository.save(user);
+        UserInRoom userInRoom = new UserInRoom(user, testRoom, "pakaya");
+        userInRoom.setRegistered(true);
+        userInRoomRepository.save(userInRoom);
+
+        ResponseEntity<UserInRoom> adminResponse = restTemplate.postForEntity(
+                "/rooms/" + testRoom.getId() + "/users/" + user.getId() + "/assignAdmin", null, UserInRoom.class);
+        assertThat(adminResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        UserInRoom updatedUserInRoom = adminResponse.getBody();
+        assertThat(updatedUserInRoom).isNotNull();
+        assertThat(updatedUserInRoom.isAdmin()).isTrue();
     }
 }

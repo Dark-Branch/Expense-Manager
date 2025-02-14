@@ -40,7 +40,7 @@ public class UserControllerTests {
 
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/users";
+        baseUrl = "http://localhost:" + port + "/api/users";
         userRepository.deleteAll();
 
         user = RoomControllerTests.saveUser(user, authService);

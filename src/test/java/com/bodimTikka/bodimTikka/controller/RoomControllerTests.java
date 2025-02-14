@@ -50,7 +50,8 @@ class RoomControllerTests {
         roomRepository.deleteAll();
         userInRoomRepository.deleteAll();
 
-        setupSignedUserAndGetToken();
+        user = saveUser(user, authService);
+        token = setupSignedUserAndGetToken(user, restTemplate);
 
         testRoom = new Room();
         testRoom.setName("Test Room");
@@ -58,7 +59,20 @@ class RoomControllerTests {
         testRoom = roomRepository.save(testRoom);
     }
 
-    private void setupSignedUserAndGetToken() {
+    public static String setupSignedUserAndGetToken(User user, TestRestTemplate restTemplate) {
+        ResponseEntity<String> loginResponse = restTemplate.postForEntity(
+                "/api/auth/login",
+                LoginRequest.builder()
+                        .email(user.getEmail())
+                        .password(user.getPassword())
+                        .build(),
+                String.class
+        );
+        assertThat(loginResponse.getBody()).isNotNull();
+        return AuthControllerTests.extractToken(loginResponse.getBody());
+    }
+
+    public static User saveUser(User user, AuthService authService){
         user = new User();
         user.setName("test_user");
         user.setEmail("example@example.com");
@@ -72,20 +86,12 @@ class RoomControllerTests {
                 .password(user.getPassword())
                 .build();
         user = authService.registerUser(request);
-
-        ResponseEntity<String> loginResponse = restTemplate.postForEntity(
-                "/api/auth/login",
-                LoginRequest.builder()
-                        .email(user.getEmail())
-                        .password(password)
-                        .build(),
-                String.class
-        );
-        assertThat(loginResponse.getBody()).isNotNull();
-        token = AuthControllerTests.extractToken(loginResponse.getBody());
+        // this changes when saving
+        user.setPassword(password);
+        return user;
     }
 
-    private HttpHeaders getHttpHeadersWithToken() {
+    public static HttpHeaders getHttpHeadersWithToken(String token) {
         HttpHeaders headers = new HttpHeaders();
         headers.setBearerAuth(token);
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -113,7 +119,7 @@ class RoomControllerTests {
         Room newRoom = new Room();
         newRoom.setName("New Test Room");
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Room> entity = new HttpEntity<>(newRoom, headers);
 
         ResponseEntity<Room> response = restTemplate.exchange(BaseURL, HttpMethod.POST, entity, Room.class);
@@ -127,7 +133,7 @@ class RoomControllerTests {
     @Test
     void testDeleteRoom() {
         addUserAndRoomRecordToUserInRoom(testRoom);
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Room> entity = new HttpEntity<>(headers);
 
         ResponseEntity<Void> response = restTemplate.exchange(BaseURL + "/" + testRoom.getId(), HttpMethod.DELETE, entity, Void.class);
@@ -148,7 +154,7 @@ class RoomControllerTests {
     @Disabled("write this")
     @Test
     void testDeleteRoom_UserNotAdmin() {
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<Map> response = restTemplate.exchange(
@@ -165,7 +171,7 @@ class RoomControllerTests {
 
     @Test
     void testGetRoomUsers() {
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Room> entity = new HttpEntity<>(testRoom, headers);
 
         ResponseEntity<List> response = restTemplate.exchange(BaseURL + "/" + testRoom.getId() + "/users", HttpMethod.GET, entity, List.class);
@@ -182,7 +188,7 @@ class RoomControllerTests {
         addUserToARoomUsingRepositories(testRoom1, false);
         addUserToARoomUsingRepositories(testRoom2, false);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<List<RoomDTO>> response = restTemplate.exchange(
@@ -213,7 +219,7 @@ class RoomControllerTests {
 
     @Test
     void testGetRoomByRoomerId_InvalidRoomerId() {
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<Room> response = restTemplate.exchange(BaseURL + "/roomer/99999", HttpMethod.GET, entity, Room.class);
@@ -229,7 +235,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
 
         AddUserRequestDTO request = new AddUserRequestDTO(user1.getId(), "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
@@ -276,7 +282,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(user1.getId(), "", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
@@ -303,7 +309,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(null, "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
@@ -325,7 +331,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(user.getId(), "Guest", false);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
@@ -347,7 +353,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(user1.getId(), "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
@@ -377,7 +383,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(999L, "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
@@ -399,7 +405,7 @@ class RoomControllerTests {
         User user1 = new User("John");
         user1 = userRepository.save(user1);
 
-        HttpHeaders headers = getHttpHeadersWithToken();
+        HttpHeaders headers = getHttpHeadersWithToken(token);
         AddUserRequestDTO request = new AddUserRequestDTO(user1.getId(), "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 

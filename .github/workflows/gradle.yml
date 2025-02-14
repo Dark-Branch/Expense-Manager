@@ -9,40 +9,19 @@ name: Java CI with Gradle
 
 on:
   push:
-    branches: [ "main", "fix/test-database" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
   build:
-
     runs-on: ubuntu-latest
     permissions:
       contents: read
-    
-    services:
-      postgres:
-        image: postgres:latest
-        env:
-          POSTGRES_DB: bodimtikka               # Database name
-          POSTGRES_USER: <your_databse_username>              # PostgreSQL user
-          POSTGRES_PASSWORD: <password>    # PostgreSQL password
-        ports:
-          - 5432:5432                           # Expose the PostgreSQL port
-        options: --health-cmd="pg_isready -U <your_databse_username>" --health-interval=10s --health-timeout=5s --health-retries=5
         
     steps:
     - name: Check out the repository
     - uses: actions/checkout@v4
-
-    - name: Set up PostgreSQL client
-    - run: sudo apt-get install postgresql-client 
-
-    - name: Wait for PostgreSQL to be ready
-    - run: |
-          while ! pg_isready -h localhost -U your_user; do
-            sleep 1;
-          done
           
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -57,6 +36,12 @@ jobs:
 
     - name: Build with Gradle Wrapper
       run: ./gradlew build
+      env:
+        DB_HOST: ${{ secrets.DB_HOST }}
+        DB_PORT: ${{ secrets.DB_PORT }}
+        DB_NAME: ${{ secrets.DB_NAME }}
+        DB_USERNAME: ${{ secrets.DB_USERNAME }}
+        DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
 
     # NOTE: The Gradle Wrapper is the default and recommended way to run Gradle (https://docs.gradle.org/current/userguide/gradle_wrapper.html).
     # If your project does not have the Gradle Wrapper configured, you can use the following configuration to run Gradle with a specified version.

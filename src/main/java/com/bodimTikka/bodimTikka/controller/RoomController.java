@@ -4,7 +4,6 @@ import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
-import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -5,7 +5,6 @@ import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import com.bodimTikka.bodimTikka.DTO.UserProjection;
 
 import java.util.List;
 import java.util.Optional;

@@ -8,7 +8,6 @@ import org.springframework.stereotype.Component;
 
 import java.nio.charset.StandardCharsets;
 import java.security.Key;
-import java.security.SignatureException;
 import java.util.Date;
 
 @Component

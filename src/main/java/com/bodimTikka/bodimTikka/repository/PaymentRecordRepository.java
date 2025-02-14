@@ -1,6 +1,5 @@
 package com.bodimTikka.bodimTikka.repository;
 
-import com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO;
 import com.bodimTikka.bodimTikka.model.PaymentRecord;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

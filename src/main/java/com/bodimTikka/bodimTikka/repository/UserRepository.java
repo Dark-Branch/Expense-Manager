@@ -1,7 +1,6 @@
 package com.bodimTikka.bodimTikka.repository;
 
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
-import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;

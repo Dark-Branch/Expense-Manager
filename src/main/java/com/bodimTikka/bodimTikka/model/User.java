@@ -1,10 +1,7 @@
 package com.bodimTikka.bodimTikka.model;
 
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import lombok.*;
-
-import java.util.List;
 
 @Entity
 @Table(name = "\"user\"")  // Use double quotes for reserved keywords in PostgreSQL

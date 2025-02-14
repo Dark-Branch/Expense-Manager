@@ -1,6 +1,5 @@
 package com.bodimTikka.bodimTikka.security;
 
-
 import com.bodimTikka.bodimTikka.model.User;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;

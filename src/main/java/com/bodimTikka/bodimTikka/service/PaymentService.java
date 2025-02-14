@@ -3,6 +3,7 @@ package com.bodimTikka.bodimTikka.service;
 import com.bodimTikka.bodimTikka.DTO.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
+import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.model.PaymentRecord;
 import com.bodimTikka.bodimTikka.model.Room;
@@ -28,11 +29,13 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentRecordRepository paymentRecordRepository;
     private final RoomService roomService;
+    private final UserService userService;
 
-    public PaymentService(PaymentRepository paymentRepository, PaymentRecordRepository paymentRecordRepository, RoomService roomService) {
+    public PaymentService(PaymentRepository paymentRepository, PaymentRecordRepository paymentRecordRepository, RoomService roomService, UserService userService) {
         this.paymentRepository = paymentRepository;
         this.paymentRecordRepository = paymentRecordRepository;
         this.roomService = roomService;
+        this.userService = userService;
     }
 
     // for testing
@@ -41,10 +44,13 @@ public class PaymentService {
     }
 
     @Transactional
-    public Payment createPayment(PaymentRequestDTO paymentRequest) {
+    public Payment createPayment(PaymentRequestDTO paymentRequest, String principalEmail) {
+        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
         Room room = getRoomOrElseThrow(paymentRequest.getRoomId());
 
         List<Long> userIDs = roomService.getRoomUserIDs(room.getId());
+
+        verifyPrincipalIdInIdList(userIDs, principalId, "Cannot add payments to room you are not a member of");
         User payer = getPayer(paymentRequest, userIDs);
         List<User> recipients = getRecipients(paymentRequest, userIDs);
 
@@ -53,6 +59,12 @@ public class PaymentService {
 
         createPaymentRecords(recipients, payer, splitAmount, payment);
         return payment;
+    }
+
+    private static void verifyPrincipalIdInIdList(List<Long> userIDs, Long principalId, String errorMessage) {
+        if (!userIDs.contains(principalId)){
+            throw new UnauthorizedException(errorMessage);
+        }
     }
 
     private void createPaymentRecords(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
@@ -107,10 +119,13 @@ public class PaymentService {
             throw new InvalidRequestException(message);
     }
 
-    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page) {
+    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page, String principalEmail) {
+        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
         Room room = getRoomOrElseThrow(roomId);
 
         List<Long> userIds = roomService.getRoomUserIDs(roomId);
+        verifyPrincipalIdInIdList(userIds, principalId, "Cannot view payments for a room you are not a member of");
+
         if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
             throw new InvalidRequestException("Users do not belong to the room");
         }
@@ -175,7 +190,13 @@ public class PaymentService {
         );
     }
 
-    public List<RoomPaymentLogDTO> getLastRoomPayments(Long roomId, int limit, int page) {
+    public List<RoomPaymentLogDTO> getLastRoomPayments(Long roomId, int limit, int page, String principalEmail) {
+        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
+        Room room = getRoomOrElseThrow(roomId);
+
+        List<Long> userIDs = roomService.getRoomUserIDs(room.getId());
+        verifyPrincipalIdInIdList(userIDs, principalId, "Cannot view payments for a room you are not a member of");
+
         // native query, so no pageable
         int offset = page * limit;
         List<Object[]> results = paymentRepository.findLastRoomPayments(roomId, limit, offset);

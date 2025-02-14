@@ -1,19 +1,16 @@
 package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
-import com.bodimTikka.bodimTikka.DTO.UserProjection;
-import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
-import java.util.List;
 import java.util.Optional;
 
 @RestController
-@RequestMapping("/users")
+@RequestMapping("/api/users")
 public class UserController {
 
     @Autowired
@@ -32,7 +29,7 @@ public class UserController {
         return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @DeleteMapping()
+    @DeleteMapping
     public ResponseEntity<Void> deleteUser(Principal principal) {
         // FIXME: additional security?
         userService.deleteUser(principal.getName());

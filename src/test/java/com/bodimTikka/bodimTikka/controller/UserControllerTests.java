@@ -1,7 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
-import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import com.bodimTikka.bodimTikka.service.AuthService;
@@ -40,10 +39,10 @@ public class UserControllerTests {
 
     @BeforeEach
     void setUp() {
-        baseUrl = "http://localhost:" + port + "/users";
+        baseUrl = "http://localhost:" + port + "/api/users";
         userRepository.deleteAll();
 
-        user = RoomControllerTests.saveUser(user, authService);
+        user = RoomControllerTests.saveUser(user, authService, "example@example.com");
         token = RoomControllerTests.setupSignedUserAndGetToken(user, restTemplate);
         System.out.println(user.getName() + user.getId() + user.getPassword());
         System.out.println(token);

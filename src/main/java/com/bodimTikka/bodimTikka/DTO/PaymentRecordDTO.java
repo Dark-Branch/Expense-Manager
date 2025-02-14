@@ -1,6 +1,5 @@
 package com.bodimTikka.bodimTikka.DTO;
 
-
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;

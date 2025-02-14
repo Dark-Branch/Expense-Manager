@@ -50,7 +50,7 @@ class RoomControllerTests {
         roomRepository.deleteAll();
         userInRoomRepository.deleteAll();
 
-        user = saveUser(user, authService);
+        user = saveUser(user, authService, "example@example.com");
         token = setupSignedUserAndGetToken(user, restTemplate);
 
         testRoom = new Room();
@@ -72,10 +72,10 @@ class RoomControllerTests {
         return AuthControllerTests.extractToken(loginResponse.getBody());
     }
 
-    public static User saveUser(User user, AuthService authService){
+    public static User saveUser(User user, AuthService authService, String email){
         user = new User();
         user.setName("test_user");
-        user.setEmail("example@example.com");
+        user.setEmail(email);
         // need to use in login req
         String password = "password";
         user.setPassword(password);

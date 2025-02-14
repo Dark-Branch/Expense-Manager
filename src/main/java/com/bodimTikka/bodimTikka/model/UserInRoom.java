@@ -39,5 +39,6 @@ public class UserInRoom {
         this.user = user;
         this.room = room;
         this.name = name;
+        this.isStillAMember = true;
     }
 }

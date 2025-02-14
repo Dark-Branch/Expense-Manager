@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
+import java.security.Principal;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,11 +24,10 @@ public class PaymentController {
     }
 
     // TODO: update materialized view after create
-    // TODO: make get mapping for payment
     @PostMapping("/create")
-    public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO paymentRequest, UriComponentsBuilder ucb) {
-        Payment payment = paymentService.createPayment(paymentRequest);
-        URI locationOfNewPayment = ucb.path("/payments/{id}").
+    public ResponseEntity<PaymentResponseDTO> createPayment(@Valid @RequestBody PaymentRequestDTO paymentRequest, UriComponentsBuilder ucb, Principal principal) {
+        Payment payment = paymentService.createPayment(paymentRequest, principal.getName());
+        URI locationOfNewPayment = ucb.path("/api/payments/{id}").
                 buildAndExpand(payment.getPaymentId()).toUri();
         return ResponseEntity.created(locationOfNewPayment).build();
     }
@@ -37,6 +37,7 @@ public class PaymentController {
         return ResponseEntity.ok(paymentService.getById(id));
     }
 
+    // FIXME: do we need this
     @GetMapping
     public ResponseEntity<List<PaymentResponseDTO>> getAllPayments() {
         return ResponseEntity.ok(paymentService.getAllPayments());
@@ -46,8 +47,9 @@ public class PaymentController {
     public ResponseEntity<List<RoomPaymentLogDTO>> getPaymentByRoomId(
             @PathVariable Long id,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(paymentService.getLastRoomPayments(id, limit, page));
+            @RequestParam(defaultValue = "10") int limit,
+            Principal principal) {
+        return ResponseEntity.ok(paymentService.getLastRoomPayments(id, limit, page, principal.getName()));
     }
 
     @GetMapping("/room/{id}/users")
@@ -56,8 +58,9 @@ public class PaymentController {
             @RequestParam(required = true) Long user1,
             @RequestParam(required = true) Long user2,
             @RequestParam(defaultValue = "0") int page,
-            @RequestParam(defaultValue = "10") int limit) {
-        return ResponseEntity.ok(paymentService.getPaymentByRoomIdAndUsers(id, user1, user2, limit, page));
+            @RequestParam(defaultValue = "10") int limit,
+            Principal principal) {
+        return ResponseEntity.ok(paymentService.getPaymentByRoomIdAndUsers(id, user1, user2, limit, page, principal.getName()));
     }
 
     @GetMapping("/room/{id}/balances")

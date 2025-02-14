@@ -6,6 +6,7 @@ import com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
 import com.bodimTikka.bodimTikka.model.*;
 import com.bodimTikka.bodimTikka.repository.*;
+import com.bodimTikka.bodimTikka.service.AuthService;
 import com.bodimTikka.bodimTikka.service.PaymentService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -39,12 +40,16 @@ public class PaymentControllerTests {
     private PaymentRecordRepository paymentRecordRepository;
     @Autowired
     private PaymentService paymentService;
+    @Autowired
+    private AuthService authService;
 
 
     private Room room;
-    private User payer;
+    private User user;
     private User recipient1;
     private User recipient2;
+    private String token;
+    private String baseURL = "/api/payments";
 
     @BeforeEach
     void setUp() {
@@ -55,11 +60,13 @@ public class PaymentControllerTests {
 
         room = roomRepository.save(new Room("Test Room"));
 
-        payer = userRepository.save(new User("Payer"));
+        user = RoomControllerTests.saveUser(user, authService, "example@example.com");
+        token = RoomControllerTests.setupSignedUserAndGetToken(user, restTemplate);
+
         recipient1 = userRepository.save(new User("Recipient1"));
         recipient2 = userRepository.save(new User("Recipient2"));
 
-        UserInRoom first = new UserInRoom(payer, room, "payer");
+        UserInRoom first = new UserInRoom(user, room, "payer");
         UserInRoom second = new UserInRoom(recipient1, room, "eka");
         UserInRoom third = new UserInRoom(recipient2, room, "deka");
 
@@ -71,24 +78,53 @@ public class PaymentControllerTests {
         // make sure to cast to long else fked up
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(1.00));
 
-        ResponseEntity<PaymentResponseDTO> response = restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<PaymentResponseDTO> response = restTemplate.exchange(baseURL +"/create", HttpMethod.POST, entity, PaymentResponseDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
 
         URI locationOfNewPayment = response.getHeaders().getLocation();
+
         ResponseEntity<Payment> getResponse = restTemplate
-                .getForEntity(locationOfNewPayment, Payment.class);
+                .exchange(locationOfNewPayment, HttpMethod.GET, entity, Payment.class);
         assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(getResponse.getBody()).isNotNull();
         assertThat(getResponse.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1.00));
     }
 
     @Test
+    public void shouldReturnErrorMessageWhenRequestSenderNotInRoom() {
+        // another user who is not in room
+        User newUser = new User();
+        newUser = RoomControllerTests.saveUser(newUser, authService, "newEmail@email.com");
+        token = RoomControllerTests.setupSignedUserAndGetToken(newUser, restTemplate);
+
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(1.00));
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseURL + "/create",
+                HttpMethod.POST,
+                entity,
+                Map.class
+        );
+
+        assertThat(response.getBody().get("message")).isEqualTo("Cannot add payments to room you are not a member of");
+        assertThat(response.getBody().get("timestamp")).isNotNull();
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    }
+
+    @Test
     public void shouldGetAllPaymentsSuccessfully() {
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(headers);
         ResponseEntity<PaymentResponseDTO[]> response = restTemplate.exchange(
-                "/payments",
+                baseURL,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                entity,
                 PaymentResponseDTO[].class
         );
 
@@ -104,7 +140,7 @@ public class PaymentControllerTests {
     private PaymentRequestDTO buildPaymentRequest(boolean isRepayment, BigDecimal amount) {
         PaymentRequestDTO request = new PaymentRequestDTO();
         request.setRoomId(room.getId());
-        request.setPayerId(payer.getId());
+        request.setPayerId(user.getId());
         request.setRecipientIds(List.of(recipient1.getId(), recipient2.getId()));
         request.setTotalAmount(amount);
         request.setRepayment(isRepayment);
@@ -116,7 +152,10 @@ public class PaymentControllerTests {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
         request.setRoomId((long) -1);  // Invalid
 
-        ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
 
@@ -125,13 +164,15 @@ public class PaymentControllerTests {
         assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.NOT_FOUND.value());
     }
 
-
     @Test
     public void shouldThrowErrorWhenUsingNonRoomerPayer() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
         request.setPayerId((long) -1);  // Invalid
 
-        ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody()).isNotNull();
@@ -145,7 +186,10 @@ public class PaymentControllerTests {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
         request.setRecipientIds(List.of((long) -1));  // Invalid
 
-        ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         assertThat(response.getBody().get("message")).isEqualTo("Recipient Id does not belong to room");
@@ -157,7 +201,10 @@ public class PaymentControllerTests {
     public void shouldThrowErrorWhenTotalAmountIsZero() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.ZERO);
 
-        ResponseEntity<Map> response = restTemplate.postForEntity("/payments/create", request, Map.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(baseURL + "/create",HttpMethod.POST, entity, Map.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
         // this is handled in validation fw
@@ -169,7 +216,10 @@ public class PaymentControllerTests {
     public void shouldThrowErrorWhenRequestIsInvalid() {
         PaymentRequestDTO request = new PaymentRequestDTO();
 
-        ResponseEntity<PaymentResponseDTO> response = restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<PaymentResponseDTO> response = restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, PaymentResponseDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
@@ -179,10 +229,13 @@ public class PaymentControllerTests {
         // Clear out the payments before testing
         paymentRepository.deleteAll();
 
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         ResponseEntity<PaymentResponseDTO[]> response = restTemplate.exchange(
-                "/payments",
+                baseURL,
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                entity,
                 PaymentResponseDTO[].class
         );
 
@@ -196,13 +249,16 @@ public class PaymentControllerTests {
         PaymentRequestDTO request1 = buildPaymentRequest(BigDecimal.valueOf(75));
         PaymentRequestDTO request2 = buildPaymentRequest(BigDecimal.valueOf(50));
 
-        paymentService.createPayment(request1);
-        paymentService.createPayment(request2);
+        paymentService.createPayment(request1, user.getEmail());
+        paymentService.createPayment(request2, user.getEmail());
+
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "?limit=20",
+                baseURL + "/room/" + room.getId() + "?limit=20",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                entity,
                 new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
         );
 
@@ -215,11 +271,36 @@ public class PaymentControllerTests {
     }
 
     @Test
-    public void shouldReturnEmptyListWhenNoPaymentsExistForRoom() {
-        ResponseEntity<List<Payment>> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "?limit=5&page=0",
+    public void shouldReturnErrorMessageWhenRequestSenderNotInRoomTriesToViewPayments() {
+        // Create a new user who is NOT in the room
+        User newUser = new User();
+        newUser = RoomControllerTests.saveUser(newUser, authService, "newUser@email.com");
+        token = RoomControllerTests.setupSignedUserAndGetToken(newUser, restTemplate);
+
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<Map> response = restTemplate.exchange(
+                baseURL + "/room/" + room.getId() + "?limit=20",
                 HttpMethod.GET,
-                HttpEntity.EMPTY,
+                entity,
+                Map.class
+        );
+
+        assertThat(response.getBody().get("message")).isEqualTo("Cannot view payments for a room you are not a member of");
+        assertThat(response.getBody().get("timestamp")).isNotNull();
+        assertThat(response.getBody().get("status")).isEqualTo(HttpStatus.UNAUTHORIZED.value());
+    }
+
+    @Test
+    public void shouldReturnEmptyListWhenNoPaymentsExistForRoom() {
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<List<Payment>> response = restTemplate.exchange(
+                baseURL + "/room/" + room.getId() + "?limit=5&page=0",
+                HttpMethod.GET,
+                entity,
                 new ParameterizedTypeReference<List<Payment>>() {}
         );
 
@@ -233,41 +314,37 @@ public class PaymentControllerTests {
         User user1 = userRepository.save(new User("Alice"));
         User user2 = userRepository.save(new User("Bob"));
 
-        Room room = roomRepository.save(new Room("Test Room"));
-
         userInRoomRepository.save(new UserInRoom(user1, room, "one"));
         userInRoomRepository.save(new UserInRoom(user2, room, "two"));
 
-        Payment payment1 = new Payment(room, BigDecimal.valueOf(100.00));
-        payment1 = paymentRepository.save(payment1);
-        Payment payment2 = new Payment(room, BigDecimal.valueOf(50.00));
-        payment2 = paymentRepository.save(payment2);
+        createPayment(user2, user1, 50.00);
+        createPayment(user1, user2, 100.00);
 
-        PaymentRecord record1 = PaymentRecord.builder().
-                fromUser(user1).
-                toUser(user2).
-                amount(payment1.getAmount()).
-                isCredit(false).
-                payment(payment1).build();
-        paymentRecordRepository.save(record1);
-        PaymentRecord record2 = PaymentRecord.builder().
-                fromUser(user2).
-                toUser(user1).
-                amount(payment2.getAmount()).
-                isCredit(true).
-                payment(payment2).build();
-        paymentRecordRepository.save(record2);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                baseURL + "/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
                 HttpMethod.GET,
-                null,
+                entity,
                 new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
+    }
+
+    private void createPayment(User fromUser, User toUser, double amount) {
+        Payment payment1 = new Payment(room, BigDecimal.valueOf(amount));
+        payment1 = paymentRepository.save(payment1);
+        PaymentRecord record1 = PaymentRecord.builder().
+                fromUser(fromUser).
+                toUser(toUser).
+                amount(payment1.getAmount()).
+                isCredit(false).
+                payment(payment1).build();
+        paymentRecordRepository.save(record1);
     }
 
     @Test
@@ -278,10 +355,13 @@ public class PaymentControllerTests {
         userInRoomRepository.save(new UserInRoom(user1, room, "one"));
         userInRoomRepository.save(new UserInRoom(user2, room, "two"));
 
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         ResponseEntity<List<RoomPaymentLogDTO>> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                baseURL + "/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
                 HttpMethod.GET,
-                null,
+                entity,
                 new ParameterizedTypeReference<List<RoomPaymentLogDTO>>() {}
         );
 
@@ -290,7 +370,6 @@ public class PaymentControllerTests {
         assertThat(response.getBody()).isEmpty();
     }
 
-
     @Test
     void testGetPaymentLogBetweenUsers_UserNotInRoom() {
         User user1 = userRepository.save(new User("Alice"));
@@ -298,10 +377,13 @@ public class PaymentControllerTests {
 
         userInRoomRepository.save(new UserInRoom(user1, room, "one"));
 
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         ResponseEntity<String> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                baseURL + "/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
                 HttpMethod.GET,
-                null,
+                entity,
                 String.class
         );
 
@@ -311,11 +393,14 @@ public class PaymentControllerTests {
 
     @Test
     void testGetPaymentLogBetweenUsers_RoomNotFound() {
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         // non-existing room ID
         ResponseEntity<String> response = restTemplate.exchange(
-                "/payments/room/99999/users?user1=1&user2=2",
+                baseURL + "/room/99999/users?user1=1&user2=2",
                 HttpMethod.GET,
-                null,
+                entity,
                 String.class
         );
 
@@ -328,11 +413,14 @@ public class PaymentControllerTests {
         // Create a room
         Room room = roomRepository.save(new Room("Test Room"));
 
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
         // Call endpoint without user parameters
         ResponseEntity<String> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "/users",
+                baseURL + "/room/" + room.getId() + "/users",
                 HttpMethod.GET,
-                null,
+                entity,
                 String.class
         );
 
@@ -342,8 +430,13 @@ public class PaymentControllerTests {
 
     @Test
     public void shouldReturnEmptyPairListWhenNoPaymentsExist() {
-        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.getForEntity(
-                "/payments/room/" + room.getId() + "/balances",
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.exchange(
+                baseURL + "/room/" + room.getId() + "/balances",
+                HttpMethod.GET,
+                entity,
                 RoomPairBalanceDTO[].class
         );
 
@@ -356,12 +449,16 @@ public class PaymentControllerTests {
     public void shouldReturnCorrectBalancesAfterSinglePayment() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(30.00));
 
-        restTemplate.postForEntity("/payments/create", request, PaymentResponseDTO.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        restTemplate.exchange(baseURL + "/create",
+                HttpMethod.POST, entity, PaymentResponseDTO.class);
 
         ResponseEntity<List<RoomPairBalanceDTO>> response = restTemplate.exchange(
-                "/payments/room/" + room.getId() + "/balances",
+                baseURL + "/room/" + room.getId() + "/balances",
                 HttpMethod.GET,
-                null,
+                entity,
                 new ParameterizedTypeReference<List<RoomPairBalanceDTO>>() {}
         );
 
@@ -372,11 +469,21 @@ public class PaymentControllerTests {
 
     @Test
     public void shouldReturnUpdatedBalancesAfterMultiplePayments() {
-        restTemplate.postForEntity("/payments/create", buildPaymentRequest(BigDecimal.valueOf(30.00)), PaymentResponseDTO.class);
-        restTemplate.postForEntity("/payments/create", buildRepaymentRequest(recipient1, BigDecimal.valueOf(10.00)), PaymentResponseDTO.class);
+        PaymentRequestDTO request1 = buildPaymentRequest(BigDecimal.valueOf(30.00));
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request1, headers);
 
-        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.getForEntity(
-                "/payments/room/" + room.getId() + "/balances",
+        restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, PaymentResponseDTO.class);
+
+        PaymentRequestDTO request2 = buildPaymentRequest(BigDecimal.valueOf(30.00));
+        entity = new HttpEntity<>(request2, headers);
+        restTemplate.exchange(baseURL + "/create", HttpMethod.POST, entity, PaymentResponseDTO.class);
+
+        HttpEntity<Void> getEntity = new HttpEntity<>(headers);
+        ResponseEntity<RoomPairBalanceDTO[]> response = restTemplate.exchange(
+                baseURL + "/room/" + room.getId() + "/balances",
+                HttpMethod.GET,
+                getEntity,
                 RoomPairBalanceDTO[].class
         );
 
@@ -389,7 +496,7 @@ public class PaymentControllerTests {
         PaymentRequestDTO request = new PaymentRequestDTO();
         request.setRoomId(room.getId());
         request.setPayerId(payer.getId());
-        request.setRecipientIds(List.of(this.payer.getId()));
+        request.setRecipientIds(List.of(this.user.getId()));
         request.setTotalAmount(amount);
         request.setRepayment(true);
         return request;
@@ -397,8 +504,13 @@ public class PaymentControllerTests {
 
     @Test
     public void shouldReturnNotFoundForNonExistentRoom() {
-        ResponseEntity<String> response = restTemplate.getForEntity(
-                "/payments/room/999999/balances",
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<Void> entity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(
+                baseURL + "/room/999999/balances",
+                HttpMethod.GET,
+                entity,
                 String.class
         );
 

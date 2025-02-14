@@ -42,7 +42,7 @@ public class UserControllerTests {
         baseUrl = "http://localhost:" + port + "/api/users";
         userRepository.deleteAll();
 
-        user = RoomControllerTests.saveUser(user, authService);
+        user = RoomControllerTests.saveUser(user, authService, "example@example.com");
         token = RoomControllerTests.setupSignedUserAndGetToken(user, restTemplate);
         System.out.println(user.getName() + user.getId() + user.getPassword());
         System.out.println(token);

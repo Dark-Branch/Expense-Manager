@@ -1,11 +1,14 @@
 package com.bodimTikka.bodimTikka.controller;
 
+import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,31 +19,23 @@ public class UserController {
     @Autowired
     private UserService userService;
 
-    @GetMapping
-    public List<User> getAllUsers() {
-        return userService.getAllUsers();
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Long id) {
-        Optional<User> user = userService.getUserById(id);
+    // TODO: advanced search
+    @GetMapping("/{name}")
+    public ResponseEntity<UserDTO> getUserById(@PathVariable String name) {
+        Optional<UserDTO> user = userService.getUserByName(name);
         return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     @GetMapping("/email")
-    public ResponseEntity<User> getUserByEmail(@RequestParam String email) {
-        Optional<User> user = userService.getUserByEmail(email);
+    public ResponseEntity<UserDTO> getUserByEmail(@RequestParam String email) {
+        Optional<UserDTO> user = userService.getUserByEmail(email);
         return user.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping
-    public User createUser(@RequestBody User user) {
-        return userService.createUser(user);
-    }
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
-        userService.deleteUser(id);
+    @DeleteMapping()
+    public ResponseEntity<Void> deleteUser(Principal principal) {
+        // FIXME: additional security?
+        userService.deleteUser(principal.getName());
         return ResponseEntity.noContent().build();
     }
 }

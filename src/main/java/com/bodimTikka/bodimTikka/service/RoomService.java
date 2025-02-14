@@ -3,7 +3,6 @@ package com.bodimTikka.bodimTikka.service;
 import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
 import com.bodimTikka.bodimTikka.DTO.RoomDTO;
 import com.bodimTikka.bodimTikka.DTO.UserDTO;
-import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
@@ -104,7 +103,7 @@ public class RoomService {
     }
 
     public Room createRoomForUser(Room room, String email) {
-        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+        UserDTO userProjection = userService.findUserProjectionByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found."));
 
         if (room.getName() == null || room.getName().trim().isEmpty()) {
@@ -131,7 +130,7 @@ public class RoomService {
         if (!roomRepository.existsById(roomId)){
             throw new InvalidRequestException("Invalid room ID");
         }
-        UserProjection userProjection = userService.findUserProjectionByEmail(email)
+        UserDTO userProjection = userService.findUserProjectionByEmail(email)
                 .orElseThrow(() -> new NotFoundException("User not found."));
 
         if (!userInRoomRepository.isUserAdmin(userProjection.getId(), roomId)){

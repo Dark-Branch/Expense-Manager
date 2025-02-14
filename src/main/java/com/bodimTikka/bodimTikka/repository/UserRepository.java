@@ -1,11 +1,14 @@
 package com.bodimTikka.bodimTikka.repository;
 
+import com.bodimTikka.bodimTikka.DTO.UserDTO;
 import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
@@ -14,6 +17,15 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
 
-    @Query("SELECT u.id AS id, u.name AS name FROM User u WHERE u.email = :email")
-    Optional<UserProjection> findUserProjectionByEmail(@Param("email") String email);
+    @Query("SELECT new com.bodimTikka.bodimTikka.DTO.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.email = :email")
+    Optional<UserDTO> findUserProjectionByEmail(@Param("email") String email);
+
+    @Query("SELECT new com.bodimTikka.bodimTikka.DTO.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.name = :name")
+    Optional<UserDTO> findUserProjectionByName(@Param("name") String name);
+
+    @Transactional
+    @Modifying
+    @Query("DELETE FROM User u WHERE u.email = :email")
+    void removeByEmail(@Param("email") String email);
+
 }

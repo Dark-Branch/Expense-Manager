@@ -1,7 +1,11 @@
 package com.bodimTikka.bodimTikka.controller;
 
+import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.DTO.UserProjection;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
+import com.bodimTikka.bodimTikka.service.AuthService;
+import com.bodimTikka.bodimTikka.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -9,6 +13,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.http.*;
+
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,73 +29,60 @@ public class UserControllerTests {
 
     @Autowired
     private UserRepository userRepository;
+    @Autowired
+    private UserService userService;
+    @Autowired
+    private AuthService authService;
 
     private String baseUrl;
+    private User user;
+    private String token;
 
     @BeforeEach
     void setUp() {
         baseUrl = "http://localhost:" + port + "/users";
         userRepository.deleteAll();
+
+        user = RoomControllerTests.saveUser(user, authService);
+        token = RoomControllerTests.setupSignedUserAndGetToken(user, restTemplate);
+        System.out.println(user.getName() + user.getId() + user.getPassword());
+        System.out.println(token);
     }
 
-    // TODO: handle duplicate errors
     @Test
-    void testCreateUser() {
-        User user = new User(null, "John Doe", "johndoe@example.com", "password123");
+    void testGetUserByName() {
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<UserDTO> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<User> response = restTemplate.postForEntity(baseUrl, user, User.class);
+        ResponseEntity<UserDTO> response = restTemplate.exchange(baseUrl + "/" + user.getName(), HttpMethod.GET, entity, UserDTO.class);
 
+        System.out.println(response.getBody());
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getId()).isNotNull();
-        assertThat(response.getBody().getEmail()).isEqualTo("johndoe@example.com");
-    }
-
-    @Test
-    void testGetUserById() {
-        User user = new User(null, "Alice", "alice@example.com", "secret");
-        ResponseEntity<User> createdUserResponse = restTemplate.postForEntity(baseUrl, user, User.class);
-
-        Long userId = createdUserResponse.getBody().getId();
-        ResponseEntity<User> response = restTemplate.getForEntity(baseUrl + "/" + userId, User.class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getId()).isEqualTo(userId);
-    }
-
-    @Test
-    void testGetAllUsers() {
-        User user = new User();
-        user.setName("user");
-        userRepository.save(user);
-        ResponseEntity<User[]> response = restTemplate.getForEntity(baseUrl, User[].class);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isNotEmpty();
+        assertThat(response.getBody().getId()).isEqualTo(user.getId());
     }
 
     @Test
     void testGetUserByEmail() {
-        User user = new User(null, "Bob", "bob@example.com", "pass123");
-        restTemplate.postForEntity(baseUrl, user, User.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<UserDTO> entity = new HttpEntity<>(headers);
 
-        ResponseEntity<User> response = restTemplate.getForEntity(baseUrl + "/email?email=bob@example.com", User.class);
+        ResponseEntity<UserDTO> response = restTemplate.exchange(baseUrl + "/email?email=" + user.getEmail(), HttpMethod.GET, entity, UserDTO.class);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
-        assertThat(response.getBody().getEmail()).isEqualTo("bob@example.com");
+        assertThat(response.getBody().getEmail()).isEqualTo(user.getEmail());
     }
 
     @Test
     void testDeleteUser() {
-        User user = new User(null, "Charlie", "charlie@example.com", "mypass");
-        ResponseEntity<User> createdUserResponse = restTemplate.postForEntity(baseUrl, user, User.class);
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<User> entity = new HttpEntity<>(headers);
 
-        Long userId = createdUserResponse.getBody().getId();
-        restTemplate.delete(baseUrl + "/" + userId);
+        ResponseEntity<?> response = restTemplate.exchange(baseUrl, HttpMethod.DELETE, entity, Void.class);
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        ResponseEntity<User> response = restTemplate.getForEntity(baseUrl + "/" + userId, User.class);
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        Optional<UserDTO> user1 = userService.getUserByEmail(user.getEmail());
+        assertThat(user1).isEmpty();
     }
 }

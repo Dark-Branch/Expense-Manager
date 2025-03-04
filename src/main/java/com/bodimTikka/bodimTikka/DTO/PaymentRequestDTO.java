@@ -29,4 +29,6 @@ public class PaymentRequestDTO {
 
     @NotEmpty(message = "Recipient IDs cannot be empty.")
     private List<Long> recipientIds;
+
+    private String description;
 }

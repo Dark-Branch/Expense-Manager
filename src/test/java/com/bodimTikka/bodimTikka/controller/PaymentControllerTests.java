@@ -95,6 +95,31 @@ public class PaymentControllerTests {
     }
 
     @Test
+    public void shouldCreatePaymentWithDescriptionSuccessfully() {
+        String expectedDescription = "Test payment description";
+        PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(1.00));
+        request.setDescription(expectedDescription); // Set the description
+
+        HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
+        HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
+
+        ResponseEntity<PaymentResponseDTO> response = restTemplate.exchange(
+                baseURL + "/create", HttpMethod.POST, entity, PaymentResponseDTO.class);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
+
+        URI locationOfNewPayment = response.getHeaders().getLocation();
+
+        ResponseEntity<Payment> getResponse = restTemplate.exchange(
+                locationOfNewPayment, HttpMethod.GET, entity, Payment.class);
+
+        assertThat(getResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(getResponse.getBody()).isNotNull();
+        assertThat(getResponse.getBody().getAmount()).isEqualByComparingTo(BigDecimal.valueOf(1.00));
+        assertThat(getResponse.getBody().getDescription()).isEqualTo(expectedDescription);
+    }
+
+    @Test
     public void shouldReturnErrorMessageWhenRequestSenderNotInRoom() {
         // another user who is not in room
         User newUser = new User();

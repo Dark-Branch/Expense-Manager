@@ -88,6 +88,7 @@ public class PaymentService {
         payment.setRoom(room);
         payment.setAmount(paymentRequest.getTotalAmount());
         payment.setIsRepayment(paymentRequest.isRepayment());
+        payment.setDescription(paymentRequest.getDescription());
         payment = paymentRepository.save(payment);
         return payment;
     }
@@ -186,6 +187,7 @@ public class PaymentService {
                 payment.getAmount(),
                 payment.getIsRepayment(),
                 payment.getPaymentTimestamp(),
+                payment.getDescription(),
                 paymentRecords
         );
     }

@@ -18,5 +18,6 @@ public class PaymentResponseDTO {
     private BigDecimal amount;
     private Boolean isRepayment;
     private LocalDateTime paymentTimestamp;
+    private String description;
     private List<PaymentRecordDTO> paymentRecords;
 }

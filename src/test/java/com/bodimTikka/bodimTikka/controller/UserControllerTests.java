@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import com.bodimTikka.bodimTikka.service.AuthService;

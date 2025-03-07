@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomDTO;
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.AddUserRequestDTO;
+import com.bodimTikka.bodimTikka.dto.RoomDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;

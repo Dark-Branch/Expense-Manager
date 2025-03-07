@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.JwtResponse;
-import com.bodimTikka.bodimTikka.DTO.LoginRequest;
-import com.bodimTikka.bodimTikka.DTO.SignupRequest;
+import com.bodimTikka.bodimTikka.dto.JwtResponse;
+import com.bodimTikka.bodimTikka.dto.LoginRequest;
+import com.bodimTikka.bodimTikka.dto.SignupRequest;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import com.bodimTikka.bodimTikka.security.JwtUtils;

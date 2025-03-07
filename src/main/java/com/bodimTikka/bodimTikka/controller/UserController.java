@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;

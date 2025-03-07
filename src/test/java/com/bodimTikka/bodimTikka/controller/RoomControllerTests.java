@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.*;
+import com.bodimTikka.bodimTikka.dto.*;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.model.UserInRoom;

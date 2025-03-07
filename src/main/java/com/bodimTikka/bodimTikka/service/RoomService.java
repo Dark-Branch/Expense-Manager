@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomDTO;
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.AddUserRequestDTO;
+import com.bodimTikka.bodimTikka.dto.RoomDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;

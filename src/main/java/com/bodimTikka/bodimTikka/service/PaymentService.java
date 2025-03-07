@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.*;
+import com.bodimTikka.bodimTikka.dto.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
@@ -21,7 +21,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO.getRoomPairBalanceDTOS;
+import static com.bodimTikka.bodimTikka.dto.RoomPairBalanceDTO.getRoomPairBalanceDTOS;
 
 @Service
 public class PaymentService {

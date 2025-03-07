@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;

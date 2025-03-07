@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.repository;
 
-import com.bodimTikka.bodimTikka.DTO.UserPaymentLogDTO;
+import com.bodimTikka.bodimTikka.dto.UserPaymentLogDTO;
 import com.bodimTikka.bodimTikka.model.Payment;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -14,7 +14,7 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     @Query("SELECT p FROM Payment p WHERE p.room.id = :roomId ORDER BY p.paymentTimestamp DESC")
     List<Payment> findLastPaymentsByRoomId(@Param("roomId") Long roomId, Pageable pageable);
 
-    @Query("SELECT new com.bodimTikka.bodimTikka.DTO.UserPaymentLogDTO( " +
+    @Query("SELECT new com.bodimTikka.bodimTikka.dto.UserPaymentLogDTO( " +
             "pr.fromUser.id, pr.toUser.id, pr.amount, p.paymentTimestamp, p.description) " +
             "FROM PaymentRecord pr " +
             "JOIN pr.payment p " +

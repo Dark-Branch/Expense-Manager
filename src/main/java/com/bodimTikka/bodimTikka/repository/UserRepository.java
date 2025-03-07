@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.repository;
 
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
@@ -16,10 +16,10 @@ public interface UserRepository extends JpaRepository<User, Long> {
     Optional<User> findByEmail(String email);
     boolean existsByEmail(String email);
 
-    @Query("SELECT new com.bodimTikka.bodimTikka.DTO.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.email = :email")
+    @Query("SELECT new com.bodimTikka.bodimTikka.dto.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.email = :email")
     Optional<UserDTO> findUserProjectionByEmail(@Param("email") String email);
 
-    @Query("SELECT new com.bodimTikka.bodimTikka.DTO.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.name = :name")
+    @Query("SELECT new com.bodimTikka.bodimTikka.dto.UserDTO(u.id, u.name, u.email) FROM User u WHERE u.name = :name")
     Optional<UserDTO> findUserProjectionByName(@Param("name") String name);
 
     @Transactional

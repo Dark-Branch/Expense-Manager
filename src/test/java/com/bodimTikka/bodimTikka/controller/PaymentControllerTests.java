@@ -1,9 +1,9 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.PaymentRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.PaymentResponseDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomPairBalanceDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomPaymentLogDTO;
+import com.bodimTikka.bodimTikka.dto.PaymentRequestDTO;
+import com.bodimTikka.bodimTikka.dto.PaymentResponseDTO;
+import com.bodimTikka.bodimTikka.dto.RoomPairBalanceDTO;
+import com.bodimTikka.bodimTikka.dto.RoomPaymentLogDTO;
 import com.bodimTikka.bodimTikka.model.*;
 import com.bodimTikka.bodimTikka.repository.*;
 import com.bodimTikka.bodimTikka.service.AuthService;

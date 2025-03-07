@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.*;
+import com.bodimTikka.bodimTikka.dto.*;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.service.PaymentService;
 import jakarta.validation.Valid;

@@ -17,9 +17,9 @@ import java.util.UUID;
 public class RoomPaymentLogDTO {
     private UUID paymentId;
     private BigDecimal amount;
-    private Long fromUserId;
+    private UUID fromUserId;
     private LocalDateTime paymentTimestamp;
     private String description;
     private Boolean isRepayment;
-    private List<Long> toUserIds;
+    private List<UUID> toUserIds;
 }

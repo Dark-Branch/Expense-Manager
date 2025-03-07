@@ -14,7 +14,7 @@ import java.util.List;
 @AllArgsConstructor
 public class PaymentResponseDTO {
     private UUID paymentId;
-    private Long roomId;
+    private UUID roomId;
     private BigDecimal amount;
     private Boolean isRepayment;
     private LocalDateTime paymentTimestamp;

@@ -23,9 +23,9 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             "OR (pr.fromUser.id = :userId2 AND pr.toUser.id = :userId1)) " +
             "ORDER BY p.paymentTimestamp DESC")
     List<UserPaymentLogDTO> findLastPaymentsByRoomIdAndUsers(
-            @Param("roomId") Long roomId,
-            @Param("userId1") Long userId1,
-            @Param("userId2") Long userId2,
+            @Param("roomId") UUID roomId,
+            @Param("userId1") UUID userId1,
+            @Param("userId2") UUID userId2,
             Pageable pageable
     );
 
@@ -40,5 +40,5 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
             "ORDER BY p.payment_timestamp DESC " +
             "LIMIT :limit OFFSET :offset",
             nativeQuery = true)
-    List<Object[]> findLastRoomPayments(@Param("roomId") Long roomId, @Param("limit") int limit, @Param("offset") int offset);
+    List<Object[]> findLastRoomPayments(@Param("roomId") UUID roomId, @Param("limit") int limit, @Param("offset") int offset);
 }

@@ -19,6 +19,7 @@ import org.springframework.http.*;
 
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -382,9 +383,10 @@ class RoomControllerTests {
 
         User user1 = new User("John");
         user1 = userRepository.save(user1);
+        UUID invalidUserId = UUID.randomUUID();
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
-        AddUserRequestDTO request = new AddUserRequestDTO(999L, "John", true);
+        AddUserRequestDTO request = new AddUserRequestDTO(invalidUserId, "John", true);
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
@@ -395,7 +397,7 @@ class RoomControllerTests {
         );
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        assertThat(response.getBody()).contains("User with ID 999 does not exist");
+        assertThat(response.getBody()).contains("User with ID " + invalidUserId + " does not exist");
     }
 
     @Test

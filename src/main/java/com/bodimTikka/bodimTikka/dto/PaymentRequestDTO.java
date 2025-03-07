@@ -9,13 +9,14 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
 public class PaymentRequestDTO {
 
     @NotNull(message = "Room ID is required.")
-    private Long roomId;
+    private UUID roomId;
 
     @NotNull(message = "Total amount is required.")
     @Positive(message = "Total amount must be a positive value.")
@@ -25,10 +26,10 @@ public class PaymentRequestDTO {
     private boolean isRepayment;
 
     @NotNull(message = "Payer ID is required.")
-    private Long payerId;
+    private UUID payerId;
 
     @NotEmpty(message = "Recipient IDs cannot be empty.")
-    private List<Long> recipientIds;
+    private List<UUID> recipientIds;
 
     private String description;
 }

@@ -3,7 +3,7 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "room")
@@ -15,7 +15,7 @@ public class Room {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(nullable = false)
     private String name;
@@ -24,7 +24,7 @@ public class Room {
         this.name = name;
     }
 
-    public Room(Long roomId) {
+    public Room(UUID roomId) {
         this.id = roomId;
     }
 }

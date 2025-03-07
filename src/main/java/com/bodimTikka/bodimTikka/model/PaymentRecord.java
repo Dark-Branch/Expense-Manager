@@ -3,6 +3,7 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_record")
@@ -15,7 +16,7 @@ public class PaymentRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @ManyToOne
     @JoinColumn(name = "from_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_from_user"))

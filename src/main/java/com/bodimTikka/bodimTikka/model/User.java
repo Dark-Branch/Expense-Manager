@@ -3,6 +3,8 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 
+import java.util.UUID;
+
 @Entity
 @Table(name = "\"user\"")  // Use double quotes for reserved keywords in PostgreSQL
 @Getter
@@ -13,7 +15,7 @@ public class User {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @Column(nullable = false)
     private String name;
@@ -27,7 +29,7 @@ public class User {
         this.name = name;
     }
 
-    public User(Long userId) {
+    public User(UUID userId) {
         this.id = userId;
     }
 }

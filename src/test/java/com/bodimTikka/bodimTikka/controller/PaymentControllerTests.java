@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import java.util.UUID;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class PaymentControllerTests {
@@ -50,6 +51,7 @@ public class PaymentControllerTests {
     private User recipient2;
     private String token;
     private String baseURL = "/api/payments";
+    private static final UUID INVALID_ID = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @BeforeEach
     void setUp() {
@@ -175,7 +177,7 @@ public class PaymentControllerTests {
     @Test
     public void shouldThrowErrorWhenRoomNotFound() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
-        request.setRoomId((long) -1);  // Invalid
+        request.setRoomId(INVALID_ID);  // Invalid
 
         HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
         HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
@@ -192,7 +194,7 @@ public class PaymentControllerTests {
     @Test
     public void shouldThrowErrorWhenUsingNonRoomerPayer() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
-        request.setPayerId((long) -1);  // Invalid
+        request.setPayerId(INVALID_ID);  // Invalid
 
         HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
         HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);
@@ -209,7 +211,7 @@ public class PaymentControllerTests {
     @Test
     public void shouldThrowErrorWhenRecipientDoesNotBelongToRoom() {
         PaymentRequestDTO request = buildPaymentRequest(BigDecimal.valueOf(100));
-        request.setRecipientIds(List.of((long) -1));  // Invalid
+        request.setRecipientIds(List.of(INVALID_ID));  // Invalid
 
         HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
         HttpEntity<PaymentRequestDTO> entity = new HttpEntity<>(request, headers);

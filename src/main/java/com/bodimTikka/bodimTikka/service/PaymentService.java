@@ -45,10 +45,10 @@ public class PaymentService {
 
     @Transactional
     public Payment createPayment(PaymentRequestDTO paymentRequest, String principalEmail) {
-        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
+        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
         Room room = getRoomOrElseThrow(paymentRequest.getRoomId());
 
-        List<Long> userIDs = roomService.getRoomUserIDs(room.getId());
+        List<UUID> userIDs = roomService.getRoomUserIDs(room.getId());
 
         verifyPrincipalIdInIdList(userIDs, principalId, "Cannot add payments to room you are not a member of");
         User payer = getPayer(paymentRequest, userIDs);
@@ -61,7 +61,7 @@ public class PaymentService {
         return payment;
     }
 
-    private static void verifyPrincipalIdInIdList(List<Long> userIDs, Long principalId, String errorMessage) {
+    private static void verifyPrincipalIdInIdList(List<UUID> userIDs, UUID principalId, String errorMessage) {
         if (!userIDs.contains(principalId)){
             throw new UnauthorizedException(errorMessage);
         }
@@ -93,14 +93,14 @@ public class PaymentService {
         return payment;
     }
 
-    private static User getPayer(PaymentRequestDTO paymentRequest, List<Long> userIDs) {
+    private static User getPayer(PaymentRequestDTO paymentRequest, List<UUID> userIDs) {
         User payer = new User();
         payer.setId(paymentRequest.getPayerId());
         verifyContains(payer.getId(), userIDs, "payer Id does not belong to room");
         return payer;
     }
 
-    private static List<User> getRecipients(PaymentRequestDTO paymentRequest, List<Long> userIDs) {
+    private static List<User> getRecipients(PaymentRequestDTO paymentRequest, List<UUID> userIDs) {
         return paymentRequest.getRecipientIds().stream().map(id -> {
             verifyContains(id, userIDs, "Recipient Id does not belong to room");
             User user = new User();
@@ -115,16 +115,16 @@ public class PaymentService {
 
     }
 
-    private static void verifyContains(Long value, List<Long> target, String message) {
+    private static void verifyContains(UUID value, List<UUID> target, String message) {
         if (!target.contains(value))
             throw new InvalidRequestException(message);
     }
 
-    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(Long roomId, Long userId1, Long userId2, int limit, int page, String principalEmail) {
-        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
+    public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(UUID roomId, UUID userId1, UUID userId2, int limit, int page, String principalEmail) {
+        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
         Room room = getRoomOrElseThrow(roomId);
 
-        List<Long> userIds = roomService.getRoomUserIDs(roomId);
+        List<UUID> userIds = roomService.getRoomUserIDs(roomId);
         verifyPrincipalIdInIdList(userIds, principalId, "Cannot view payments for a room you are not a member of");
 
         if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
@@ -139,7 +139,7 @@ public class PaymentService {
         return paymentRepository.findLastPaymentsByRoomIdAndUsers(roomId, userId1, userId2, pageable);
     }
 
-    private Room getRoomOrElseThrow(Long roomId) {
+    private Room getRoomOrElseThrow(UUID roomId) {
         return roomService.getRoomById(roomId).orElseThrow(() -> new
                 NotFoundException("Room not found"));
     }
@@ -148,7 +148,9 @@ public class PaymentService {
         PaymentRecord record = new PaymentRecord();
 
         // if always transaction goes from low user to high id user
-        if (recipient.getId() < payer.getId()) {
+        // FIXME
+//        if (recipient.getId() < payer.getId()) {
+        if (true) {
             record.setFromUser(recipient);
             record.setToUser(payer);
             record.setIsCredit(true);
@@ -192,11 +194,11 @@ public class PaymentService {
         );
     }
 
-    public List<RoomPaymentLogDTO> getLastRoomPayments(Long roomId, int limit, int page, String principalEmail) {
-        Long principalId = userService.getUserByEmail(principalEmail).get().getId();
+    public List<RoomPaymentLogDTO> getLastRoomPayments(UUID roomId, int limit, int page, String principalEmail) {
+        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
         Room room = getRoomOrElseThrow(roomId);
 
-        List<Long> userIDs = roomService.getRoomUserIDs(room.getId());
+        List<UUID> userIDs = roomService.getRoomUserIDs(room.getId());
         verifyPrincipalIdInIdList(userIDs, principalId, "Cannot view payments for a room you are not a member of");
 
         // native query, so no pageable
@@ -206,19 +208,19 @@ public class PaymentService {
         return results.stream().map(row -> new RoomPaymentLogDTO(
                 (UUID) row[0],                           // paymentId
                 (BigDecimal) row[1],                     // amount
-                ((Number) row[2]).longValue(),           // fromUserId
+                (UUID) row[2],           // fromUserId
                 // special for psql
                 ((Timestamp) row[3]).toLocalDateTime(),  // Timestamp
                 (String) row[4],                         // description
                 (boolean) row[5],                        // isRepayment
                 row[6] != null ? Arrays.stream(((String) row[6]).split("/"))  // toUserIds (split string)
-                        .map(Long::valueOf)
+                        .map(UUID::fromString)
                         .collect(Collectors.toList()) : Collections.emptyList()
         )).collect(Collectors.toList());
     }
 
     @Transactional
-    public List<RoomPairBalanceDTO> getPairwiseBalances(Long roomId) {
+    public List<RoomPairBalanceDTO> getPairwiseBalances(UUID roomId) {
         Room room = getRoomOrElseThrow(roomId);
         // crucial because materialized view
         paymentRecordRepository.refreshMaterializedView();

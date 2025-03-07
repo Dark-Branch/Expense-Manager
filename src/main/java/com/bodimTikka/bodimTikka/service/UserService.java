@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Service
 public class UserService {
@@ -35,7 +36,7 @@ public class UserService {
         userRepository.removeByEmail(email);
     }
 
-    public boolean existsById(Long userId){
+    public boolean existsById(UUID userId){
         return userRepository.existsById(userId);
     }
 

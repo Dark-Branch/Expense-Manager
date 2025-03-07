@@ -1,6 +1,8 @@
 package com.bodimTikka.bodimTikka.dto;
 
+import java.util.UUID;
+
 public interface UserProjection {
-    Long getId();
+    UUID getId();
     String getName();
 }

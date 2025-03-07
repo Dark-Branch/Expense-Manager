@@ -15,10 +15,10 @@ public interface UserInRoomRepository extends JpaRepository<UserInRoom, UUID> {
     @Query("SELECT uir FROM UserInRoom uir WHERE uir.room.id = :roomId AND uir.isStillAMember = true")
     List<UserInRoom> findUsersByRoomId(@Param("roomId") UUID roomId);
 
-    @Query("SELECT uir.user.id FROM UserInRoom uir WHERE uir.room.id = :roomId")
+    @Query("SELECT uir.id FROM UserInRoom uir WHERE uir.room.id = :roomId")
     List<UUID> findUserIdsByRoomId(@Param("roomId") UUID roomId);
 
-    Boolean existsByUserIdAndRoomId(UUID userId, UUID roomId);
+    Boolean existsByUserIdAndRoomIdAndIsStillAMember(UUID userId, UUID roomId, Boolean isStillAMember);
 
     @Modifying
     @Transactional

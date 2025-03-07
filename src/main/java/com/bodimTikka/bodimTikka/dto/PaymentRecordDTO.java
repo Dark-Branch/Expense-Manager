@@ -14,5 +14,4 @@ public class PaymentRecordDTO {
     private UUID fromUserId;
     private UUID toUserId;
     private BigDecimal amount;
-    private Boolean isCredit;
 }

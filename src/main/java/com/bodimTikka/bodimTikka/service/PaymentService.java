@@ -4,10 +4,7 @@ import com.bodimTikka.bodimTikka.dto.*;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
-import com.bodimTikka.bodimTikka.model.Payment;
-import com.bodimTikka.bodimTikka.model.PaymentRecord;
-import com.bodimTikka.bodimTikka.model.Room;
-import com.bodimTikka.bodimTikka.model.User;
+import com.bodimTikka.bodimTikka.model.*;
 import com.bodimTikka.bodimTikka.repository.PaymentRepository;
 import com.bodimTikka.bodimTikka.repository.PaymentRecordRepository;
 import org.springframework.data.domain.PageRequest;
@@ -43,16 +40,17 @@ public class PaymentService {
         return paymentRepository.findById(id).orElseThrow(() -> new NotFoundException("Payment Not Found"));
     }
 
+    // TODO: make this transaction small
     @Transactional
     public Payment createPayment(PaymentRequestDTO paymentRequest, String principalEmail) {
-        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
+        UUID principalId = userService.getUserByEmail(principalEmail).getId();
         Room room = getRoomOrElseThrow(paymentRequest.getRoomId());
 
-        List<UUID> userIDs = roomService.getRoomUserIDs(room.getId());
+        verifyPrincipalInRoom(principalId, room.getId(), "Cannot add payments to room you are not a member of");
+        List<UUID> userIDs = roomService.getUserInRoomIDs(room.getId());
 
-        verifyPrincipalIdInIdList(userIDs, principalId, "Cannot add payments to room you are not a member of");
-        User payer = getPayer(paymentRequest, userIDs);
-        List<User> recipients = getRecipients(paymentRequest, userIDs);
+        UserInRoom payer = getPayer(paymentRequest, userIDs);
+        List<UserInRoom> recipients = getRecipients(paymentRequest, userIDs);
 
         Payment payment = makePayment(paymentRequest, room);
         BigDecimal splitAmount = getSplitPaymentAmount(paymentRequest, recipients);
@@ -61,21 +59,23 @@ public class PaymentService {
         return payment;
     }
 
-    private static void verifyPrincipalIdInIdList(List<UUID> userIDs, UUID principalId, String errorMessage) {
-        if (!userIDs.contains(principalId)){
+    private void verifyPrincipalInRoom(UUID principalId, UUID roomId, String errorMessage) {
+        if (!roomService.isUserInRoom(principalId, roomId)){
             throw new UnauthorizedException(errorMessage);
         }
     }
 
-    private void createPaymentRecords(List<User> recipients, User payer, BigDecimal splitAmount, Payment payment) {
+    private void createPaymentRecords(List<UserInRoom> recipients, UserInRoom payer, BigDecimal splitAmount, Payment payment) {
         recipients.forEach(recipient -> {
             createPaymentRecord(payer, recipient, splitAmount, payment);
         });
     }
 
-    private static BigDecimal getSplitPaymentAmount(PaymentRequestDTO paymentRequest, List<User> recipients) {
+    // TODO: no need to pass all array just to get size
+    private static BigDecimal getSplitPaymentAmount(PaymentRequestDTO paymentRequest, List<UserInRoom> recipients) {
         BigDecimal splitAmount;
         if (!paymentRequest.isRepayment()) {
+            // TODO: rounding is business decision, so? decide
             splitAmount = paymentRequest.getTotalAmount().divide(BigDecimal.valueOf(recipients.size()), RoundingMode.HALF_UP);
         } else {
             splitAmount = paymentRequest.getTotalAmount();
@@ -87,25 +87,26 @@ public class PaymentService {
         Payment payment = new Payment();
         payment.setRoom(room);
         payment.setAmount(paymentRequest.getTotalAmount());
+        // TODO: do we need this
         payment.setIsRepayment(paymentRequest.isRepayment());
         payment.setDescription(paymentRequest.getDescription());
         payment = paymentRepository.save(payment);
         return payment;
     }
 
-    private static User getPayer(PaymentRequestDTO paymentRequest, List<UUID> userIDs) {
-        User payer = new User();
+    private static UserInRoom getPayer(PaymentRequestDTO paymentRequest, List<UUID> userInRoomIDs) {
+        UserInRoom payer = new UserInRoom();
         payer.setId(paymentRequest.getPayerId());
-        verifyContains(payer.getId(), userIDs, "payer Id does not belong to room");
+        verifyContains(payer.getId(), userInRoomIDs, "payer Id does not belong to room");
         return payer;
     }
 
-    private static List<User> getRecipients(PaymentRequestDTO paymentRequest, List<UUID> userIDs) {
+    private static List<UserInRoom> getRecipients(PaymentRequestDTO paymentRequest, List<UUID> userInRoomIDs) {
         return paymentRequest.getRecipientIds().stream().map(id -> {
-            verifyContains(id, userIDs, "Recipient Id does not belong to room");
-            User user = new User();
-            user.setId(id);
-            return user;
+            verifyContains(id, userInRoomIDs, "Recipient Id does not belong to room");
+            UserInRoom userInRoom = new UserInRoom();
+            userInRoom.setId(id);
+            return userInRoom;
         }).toList();
     }
 
@@ -121,11 +122,12 @@ public class PaymentService {
     }
 
     public List<UserPaymentLogDTO> getPaymentByRoomIdAndUsers(UUID roomId, UUID userId1, UUID userId2, int limit, int page, String principalEmail) {
-        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
+        UUID principalId = userService.getUserByEmail(principalEmail).getId();
+        // TODO: can refactor this bcuz there is no use of room anymore
         Room room = getRoomOrElseThrow(roomId);
 
-        List<UUID> userIds = roomService.getRoomUserIDs(roomId);
-        verifyPrincipalIdInIdList(userIds, principalId, "Cannot view payments for a room you are not a member of");
+        verifyPrincipalInRoom(principalId, roomId, "Cannot view payments for a room you are not a member of");
+        List<UUID> userIds = roomService.getUserInRoomIDs(roomId);
 
         if (!new HashSet<>(userIds).containsAll(Arrays.asList(userId1, userId2))) {
             throw new InvalidRequestException("Users do not belong to the room");
@@ -144,22 +146,10 @@ public class PaymentService {
                 NotFoundException("Room not found"));
     }
 
-    private void createPaymentRecord(User payer, User recipient, BigDecimal amount, Payment payment) {
+    private void createPaymentRecord(UserInRoom payer, UserInRoom recipient, BigDecimal amount, Payment payment) {
         PaymentRecord record = new PaymentRecord();
-
-        // if always transaction goes from low user to high id user
-        // FIXME
-//        if (recipient.getId() < payer.getId()) {
-        if (true) {
-            record.setFromUser(recipient);
-            record.setToUser(payer);
-            record.setIsCredit(true);
-        } else {
-            record.setFromUser(payer);
-            record.setToUser(recipient);
-            record.setIsCredit(false);
-        }
-
+        record.setFromUser(payer);
+        record.setToUser(recipient);
         record.setAmount(amount);
         record.setPayment(payment);
         paymentRecordRepository.save(record);
@@ -173,8 +163,7 @@ public class PaymentService {
                     .map(record -> new PaymentRecordDTO(
                             record.getFromUser().getId(),
                             record.getToUser().getId(),
-                            record.getAmount(),
-                            record.getIsCredit()))
+                            record.getAmount()))
                     .collect(Collectors.toList());
 
             return getPaymentResponseDTO(payment, records);
@@ -195,11 +184,10 @@ public class PaymentService {
     }
 
     public List<RoomPaymentLogDTO> getLastRoomPayments(UUID roomId, int limit, int page, String principalEmail) {
-        UUID principalId = userService.getUserByEmail(principalEmail).get().getId();
+        UUID principalId = userService.getUserByEmail(principalEmail).getId();
         Room room = getRoomOrElseThrow(roomId);
 
-        List<UUID> userIDs = roomService.getRoomUserIDs(room.getId());
-        verifyPrincipalIdInIdList(userIDs, principalId, "Cannot view payments for a room you are not a member of");
+        verifyPrincipalInRoom(principalId, roomId, "Cannot view payments for a room you are not a member of");
 
         // native query, so no pageable
         int offset = page * limit;

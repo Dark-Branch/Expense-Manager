@@ -1,6 +1,7 @@
 package com.bodimTikka.bodimTikka.service;
 
 import com.bodimTikka.bodimTikka.dto.UserDTO;
+import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +25,9 @@ public class UserService {
         return userRepository.findUserProjectionByName(name);
     }
 
-    public Optional<UserDTO> getUserByEmail(String email) {
-        return userRepository.findUserProjectionByEmail(email);
+    public UserDTO getUserByEmail(String email) {
+        return userRepository.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found with given E-mail"));
     }
 
     public User createUser(User user) {

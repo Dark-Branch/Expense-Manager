@@ -37,7 +37,11 @@ public class RoomService {
                 .collect(Collectors.toList());
     }
 
-    public List<UUID> getRoomUserIDs(UUID roomID){
+    public Boolean isUserInRoom(UUID userId, UUID roomId){
+        return userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(userId, roomId, true);
+    }
+
+    public List<UUID> getUserInRoomIDs(UUID roomID){
         return userInRoomRepository.findUserIdsByRoomId(roomID);
     }
 
@@ -76,7 +80,7 @@ public class RoomService {
     }
 
     private void verify(UUID senderId, UUID roomId, String name, boolean isRegistered, UUID userId) {
-        if (!userInRoomRepository.existsByUserIdAndRoomId(senderId, roomId)){
+        if (!userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(senderId, roomId, true)){
             throw new InvalidRequestException("Current user doesn't belong to the room");
         }
 
@@ -97,7 +101,7 @@ public class RoomService {
             }
         }
 
-        if (isRegistered && userInRoomRepository.existsByUserIdAndRoomId(userId, roomId)) {
+        if (isRegistered && userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(userId, roomId, true)) {
             throw new InvalidRequestException("User is already in the room");
         }
     }

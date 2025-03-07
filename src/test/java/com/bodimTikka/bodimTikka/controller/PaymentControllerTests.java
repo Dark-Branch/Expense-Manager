@@ -49,6 +49,11 @@ public class PaymentControllerTests {
     private User user;
     private User recipient1;
     private User recipient2;
+
+    private UserInRoom user1;
+    private UserInRoom user2;
+    private UserInRoom user3;
+
     private String token;
     private String baseURL = "/api/payments";
     private static final UUID INVALID_ID = java.util.UUID.fromString("00000000-0000-0000-0000-000000000001");
@@ -65,14 +70,12 @@ public class PaymentControllerTests {
         user = RoomControllerTests.saveUser(user, authService, "example@example.com");
         token = RoomControllerTests.setupSignedUserAndGetToken(user, restTemplate);
 
-        recipient1 = userRepository.save(new User("Recipient1"));
-        recipient2 = userRepository.save(new User("Recipient2"));
+        recipient1 = userRepository.save(new User("Recipient1", "1@email.com", "huk"));
+        recipient2 = userRepository.save(new User("Recipient2", "2@email.com", "huk"));
 
-        UserInRoom first = new UserInRoom(user, room, "payer");
-        UserInRoom second = new UserInRoom(recipient1, room, "eka");
-        UserInRoom third = new UserInRoom(recipient2, room, "deka");
-
-        userInRoomRepository.saveAll(List.of(first, second, third));
+        user1 = userInRoomRepository.save(new UserInRoom(user, room, "payer"));
+        user2 = userInRoomRepository.save(new UserInRoom(recipient1, room, "eka"));
+        user3 = userInRoomRepository.save(new UserInRoom(recipient2, room, "deka"));
     }
 
     @Test
@@ -160,6 +163,7 @@ public class PaymentControllerTests {
         assertThat(response.getBody().length).isGreaterThanOrEqualTo(0);
     }
 
+    // from payer to eka and deka
     private PaymentRequestDTO buildPaymentRequest(BigDecimal amount) {
         return buildPaymentRequest(false, amount);
     }
@@ -167,8 +171,8 @@ public class PaymentControllerTests {
     private PaymentRequestDTO buildPaymentRequest(boolean isRepayment, BigDecimal amount) {
         PaymentRequestDTO request = new PaymentRequestDTO();
         request.setRoomId(room.getId());
-        request.setPayerId(user.getId());
-        request.setRecipientIds(List.of(recipient1.getId(), recipient2.getId()));
+        request.setPayerId(user1.getId());
+        request.setRecipientIds(List.of(user2.getId(), user3.getId()));
         request.setTotalAmount(amount);
         request.setRepayment(isRepayment);
         return request;
@@ -338,12 +342,6 @@ public class PaymentControllerTests {
 
     @Test
     void testGetPaymentLogBetweenUsers_ValidUsersInRoom() {
-        User user1 = userRepository.save(new User("Alice"));
-        User user2 = userRepository.save(new User("Bob"));
-
-        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
-        userInRoomRepository.save(new UserInRoom(user2, room, "two"));
-
         createPayment(user2, user1, 50.00);
         createPayment(user1, user2, 100.00);
 
@@ -362,26 +360,19 @@ public class PaymentControllerTests {
         assertThat(response.getBody()).hasSize(2);
     }
 
-    private void createPayment(User fromUser, User toUser, double amount) {
+    private void createPayment(UserInRoom fromUser, UserInRoom toUser, double amount) {
         Payment payment1 = new Payment(room, BigDecimal.valueOf(amount));
         payment1 = paymentRepository.save(payment1);
         PaymentRecord record1 = PaymentRecord.builder().
                 fromUser(fromUser).
                 toUser(toUser).
                 amount(payment1.getAmount()).
-                isCredit(false).
                 payment(payment1).build();
         paymentRecordRepository.save(record1);
     }
 
     @Test
     void testGetPaymentLogBetweenUsers_NoPayments() {
-        User user1 = userRepository.save(new User("Alice"));
-        User user2 = userRepository.save(new User("Bob"));
-
-        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
-        userInRoomRepository.save(new UserInRoom(user2, room, "two"));
-
         HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
@@ -399,16 +390,15 @@ public class PaymentControllerTests {
 
     @Test
     void testGetPaymentLogBetweenUsers_UserNotInRoom() {
-        User user1 = userRepository.save(new User("Alice"));
-        User user2 = userRepository.save(new User("Bob"));
-
-        userInRoomRepository.save(new UserInRoom(user1, room, "one"));
+        User user4 = userRepository.save(new User("Alice", "3@email.com", "huk"));
+        Room newRoom = roomRepository.save(new Room("Test Room"));
+        UserInRoom userInRoom = userInRoomRepository.save(new UserInRoom(user4, newRoom, "eka"));
 
         HttpHeaders headers = RoomControllerTests.getHttpHeadersWithToken(token);
         HttpEntity<Void> entity = new HttpEntity<>(headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                baseURL + "/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
+                baseURL + "/room/" + room.getId() + "/users?user1=" + user1.getId() + "&user2=" + userInRoom.getId(),
                 HttpMethod.GET,
                 entity,
                 String.class
@@ -425,7 +415,7 @@ public class PaymentControllerTests {
 
         // non-existing room ID
         ResponseEntity<String> response = restTemplate.exchange(
-                baseURL + "/room/99999/users?user1=1&user2=2",
+                baseURL + "/room/"+ INVALID_ID + "/users?user1=" + user1.getId() + "&user2=" + user2.getId(),
                 HttpMethod.GET,
                 entity,
                 String.class

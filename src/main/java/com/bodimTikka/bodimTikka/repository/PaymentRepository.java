@@ -30,13 +30,14 @@ public interface PaymentRepository extends JpaRepository<Payment, UUID> {
     );
 
     // native query for psql
-    @Query(value = "SELECT p.payment_id, p.amount, pr.from_user_id, " +
+    // TODO: has to refine these methods
+    @Query(value = "SELECT p.payment_id, p.amount, pr.from_user_in_room_id, " +
             "p.payment_timestamp, p.description, p.is_repayment, " +
-            "STRING_AGG(pr.to_user_id::TEXT, '/') AS to_users " +
+            "STRING_AGG(pr.to_user_in_room_id::TEXT, '/') AS to_users " +
             "FROM payment_record pr " +
             "JOIN payment p ON pr.payment_id = p.payment_id " +
             "WHERE p.room_id = :roomId " +
-            "GROUP BY p.payment_id, p.amount, pr.from_user_id, p.payment_timestamp, p.description " +
+            "GROUP BY p.payment_id, p.amount, pr.from_user_in_room_id, p.payment_timestamp, p.description " +
             "ORDER BY p.payment_timestamp DESC " +
             "LIMIT :limit OFFSET :offset",
             nativeQuery = true)

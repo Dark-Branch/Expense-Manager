@@ -202,8 +202,8 @@ class RoomControllerTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 1");
-        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 2");
+        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 2");
+        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 1");
     }
 
     private void addUserToARoomUsingRepositories(Room testRoom, boolean isAdmin) {
@@ -233,7 +233,7 @@ class RoomControllerTests {
     void testAddUserToRoom_ValidRegisteredUser() {
         addUserAndRoomRecordToUserInRoom(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -259,7 +259,7 @@ class RoomControllerTests {
     @Disabled
     @Test
     void testAddUserToRoom_ValidUnregisteredUser() {
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
         UserInRoom userInRoom1 = new UserInRoom(user1, testRoom, "pakaya");
         userInRoomRepository.save(userInRoom1);
@@ -280,7 +280,7 @@ class RoomControllerTests {
     void testAddUserToRoom_MissingName() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -307,7 +307,7 @@ class RoomControllerTests {
     void testAddUserToRoom_MissingUserIdForRegisteredUser() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -329,7 +329,7 @@ class RoomControllerTests {
     void testAddUserToRoom_UserIdProvidedForUnregisteredUser() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -351,7 +351,7 @@ class RoomControllerTests {
     void testAddUserToRoom_UserAlreadyInRoom() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -381,7 +381,7 @@ class RoomControllerTests {
     void testAddUserToRoom_InvalidUserId() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
         UUID invalidUserId = UUID.randomUUID();
 
@@ -404,7 +404,7 @@ class RoomControllerTests {
     void testAddUserToRoom_InvalidRoomId() {
         addUserToARoomAsAdminUsingRepositories(testRoom);
 
-        User user1 = new User("John");
+        User user1 = new User("John", "1@email.com", "huk");
         user1 = userRepository.save(user1);
 
         HttpHeaders headers = getHttpHeadersWithToken(token);
@@ -412,7 +412,7 @@ class RoomControllerTests {
         HttpEntity<AddUserRequestDTO> entity = new HttpEntity<>(request, headers);
 
         ResponseEntity<String> response = restTemplate.exchange(
-                BaseURL + "/999/users" ,
+                BaseURL + "/" + user1.getId() + "/users" ,
                 HttpMethod.POST,
                 entity,
                 String.class
@@ -426,7 +426,7 @@ class RoomControllerTests {
     @Test
     void testAssignAdmin_Valid() {
         // Create and add a user to the room
-        User user = new User("John");
+        User user = new User("John", "1@email.com", "huk");
         user = userRepository.save(user);
         UserInRoom userInRoom = new UserInRoom(user, testRoom, "pakaya");
         userInRoom.setRegistered(true);

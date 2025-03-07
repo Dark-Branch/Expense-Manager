@@ -14,6 +14,7 @@ import java.util.UUID;
 public class User {
 
     @Id
+    // TODO: is this needed
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private UUID id;
 
@@ -21,12 +22,14 @@ public class User {
     private String name;
 
     @Column(unique = true)
-    private String email;  // Nullable for unregistered users
+    private String email;
 
-    private String password;  // Nullable
+    private String password;
 
-    public User(String name) {
+    public User(String name, String email, String password) {
         this.name = name;
+        this.email = email;
+        this.password = password;
     }
 
     public User(UUID userId) {

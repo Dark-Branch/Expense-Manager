@@ -1,8 +1,8 @@
 CREATE TABLE "user" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
-    email VARCHAR(255) UNIQUE,      -- nullable for unregistered users
-    password VARCHAR(255)           -- nullable
+    email VARCHAR(255) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE room (
@@ -14,7 +14,7 @@ CREATE TABLE user_in_room (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,                         -- Nullable for unregistered users
     room_id UUID NOT NULL,
-    name VARCHAR(255) NOT NULL,          -- Display name for the room
+    name VARCHAR(255) NOT NULL,          -- Display name for the user in this room
     is_still_a_member BOOLEAN DEFAULT TRUE,
     is_admin BOOLEAN DEFAULT FALSE,
     is_registered BOOLEAN DEFAULT FALSE,
@@ -39,15 +39,14 @@ CREATE INDEX idx_payment_timestamp ON payment(payment_timestamp DESC);
 CREATE TABLE payment_record (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     -- from_id < to_id
-    from_user_id UUID NOT NULL,
-    to_user_id UUID NOT NULL,
+    from_user_in_room_id UUID NOT NULL,
+    to_user_in_room_id UUID NOT NULL,
     amount DECIMAL(10, 2) NOT NULL CHECK (amount > 0),
     payment_id UUID NOT NULL,
-    is_credit BOOLEAN NOT NULL,  -- Replaces 'direction' for better clarity
-    FOREIGN KEY (from_user_id) REFERENCES "user"(id) ON DELETE CASCADE,
-    FOREIGN KEY (to_user_id) REFERENCES "user"(id) ON DELETE CASCADE,
+    FOREIGN KEY (from_user_in_room_id) REFERENCES user_in_room(id) ON DELETE CASCADE,
+    FOREIGN KEY (to_user_in_room_id) REFERENCES user_in_room(id) ON DELETE CASCADE,
     FOREIGN KEY (payment_id) REFERENCES payment(payment_id) ON DELETE CASCADE,
-    UNIQUE (payment_id, from_user_id, to_user_id)
+    UNIQUE (payment_id, from_user_in_room_id, to_user_in_room_id)
 );
 
 -- FIXME
@@ -61,11 +60,11 @@ CREATE TABLE payment_record (
 --WHERE user_1 = ? AND user_2 = ?
 --GROUP BY user_1, user_2;
 
-
-CREATE INDEX idx_from_user ON payment_record (from_user_id);
-CREATE INDEX idx_to_user ON payment_record (to_user_id);
+-- FIXME: first can be removed because combinded index covers that also
+CREATE INDEX idx_from_user ON payment_record (from_user_in_room_id);
+CREATE INDEX idx_to_user ON payment_record (to_user_in_room_id);
 CREATE INDEX idx_room ON payment (room_id);
-CREATE INDEX idx_payment_users ON payment_record (from_user_id, to_user_id);
+CREATE INDEX idx_payment_users ON payment_record (from_user_in_room_id, to_user_in_room_id);
 
 CREATE VIEW room_payment_log AS
 SELECT
@@ -75,10 +74,9 @@ SELECT
     p.description,
     p.is_repayment,
     p.payment_timestamp,
-    pr.from_user_id,
-    pr.to_user_id,
-    pr.amount AS user_amount,
-    pr.is_credit
+    pr.from_user_in_room_id,
+    pr.to_user_in_room_id,
+    pr.amount AS user_amount
 FROM payment p
 LEFT JOIN payment_record pr ON p.payment_id = pr.payment_id;
 
@@ -86,18 +84,16 @@ LEFT JOIN payment_record pr ON p.payment_id = pr.payment_id;
 CREATE MATERIALIZED VIEW room_pair_balances_to_pay AS
 WITH pair_balance AS (
     SELECT
-        u1.room_id,
-        LEAST(pr.from_user_id, pr.to_user_id) AS from_user,
-        GREATEST(pr.from_user_id, pr.to_user_id) AS to_user,
-        SUM(CASE
-            WHEN pr.is_credit THEN pr.amount
-            ELSE -pr.amount
-        END) AS balance
+        p.room_id,
+        pr.from_user_in_room_id AS from_user,
+        pr.to_user_in_room_id AS to_user,
+        SUM(pr.amount) AS balance
     FROM payment_record pr
-    JOIN user_in_room u1 ON pr.from_user_id = u1.user_id
-    JOIN user_in_room u2 ON pr.to_user_id = u2.user_id
-    WHERE u1.room_id = u2.room_id
-    GROUP BY u1.room_id, from_user, to_user
+    JOIN payment p on pr.payment_id = p.payment_id
+    -- TODO: manage this view on application when removing user id mapping and getting user in room id
+    -- can omit group by room on assumption uuids are unique on the database so wont collide
+    -- but select statement give error
+    GROUP BY p.room_id, from_user, to_user
 )
 SELECT * FROM pair_balance;
 

@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;
 import com.bodimTikka.bodimTikka.service.AuthService;
@@ -81,7 +81,7 @@ public class UserControllerTests {
         ResponseEntity<?> response = restTemplate.exchange(baseUrl, HttpMethod.DELETE, entity, Void.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        Optional<UserDTO> user1 = userService.getUserByEmail(user.getEmail());
-        assertThat(user1).isEmpty();
+        UserDTO user1 = userRepository.getUserByEmail(user.getEmail());
+        assertThat(user1).isNull();
     }
 }

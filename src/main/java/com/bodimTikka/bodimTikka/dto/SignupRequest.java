@@ -1,4 +1,4 @@
-package com.bodimTikka.bodimTikka.DTO;
+package com.bodimTikka.bodimTikka.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

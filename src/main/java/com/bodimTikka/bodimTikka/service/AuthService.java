@@ -1,7 +1,7 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.LoginRequest;
-import com.bodimTikka.bodimTikka.DTO.SignupRequest;
+import com.bodimTikka.bodimTikka.dto.LoginRequest;
+import com.bodimTikka.bodimTikka.dto.SignupRequest;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.model.User;
 import com.bodimTikka.bodimTikka.repository.UserRepository;

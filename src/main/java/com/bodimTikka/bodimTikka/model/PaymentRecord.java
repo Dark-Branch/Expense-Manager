@@ -3,6 +3,7 @@ package com.bodimTikka.bodimTikka.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Entity
 @Table(name = "payment_record")
@@ -15,21 +16,18 @@ public class PaymentRecord {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    private UUID id;
 
     @ManyToOne
-    @JoinColumn(name = "from_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_from_user"))
-    private User fromUser;
+    @JoinColumn(name = "from_user_in_room_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_from_user"))
+    private UserInRoom fromUser;
 
     @ManyToOne
-    @JoinColumn(name = "to_user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_to_user"))
-    private User toUser;
+    @JoinColumn(name = "to_user_in_room_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_to_user"))
+    private UserInRoom toUser;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
-
-    @Column(name = "is_credit")
-    private Boolean isCredit;
 
     @ManyToOne
     @JoinColumn(name = "payment_id", nullable = false, foreignKey = @ForeignKey(name = "fk_paymentrecord_payment"))

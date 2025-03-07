@@ -1,17 +1,17 @@
-package com.bodimTikka.bodimTikka.DTO;
+package com.bodimTikka.bodimTikka.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 
 @Getter
 @Setter
 @AllArgsConstructor
 public class PaymentRecordDTO {
-    private Long fromUserId;
-    private Long toUserId;
+    private UUID fromUserId;
+    private UUID toUserId;
     private BigDecimal amount;
-    private Boolean isCredit;
 }

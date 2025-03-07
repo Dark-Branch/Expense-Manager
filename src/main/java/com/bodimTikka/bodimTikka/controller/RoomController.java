@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomDTO;
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.AddUserRequestDTO;
+import com.bodimTikka.bodimTikka.dto.RoomDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.model.Room;
 import com.bodimTikka.bodimTikka.model.UserInRoom;
 import com.bodimTikka.bodimTikka.service.RoomService;
@@ -14,6 +14,7 @@ import java.security.Principal;
 import java.util.List;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/rooms")
@@ -23,25 +24,25 @@ public class RoomController {
 
     // TODO: is this really needed
     @GetMapping("/{id}")
-    public ResponseEntity<Room> getRoomById(@PathVariable Long id) {
+    public ResponseEntity<Room> getRoomById(@PathVariable UUID id) {
         Optional<Room> room = roomService.getRoomById(id);
         return room.map(ResponseEntity::ok).orElseGet(() -> ResponseEntity.notFound().build());
     }
 
     // TODO: add users to room
     @GetMapping("/{roomId}/users")
-    public List<UserDTO> getRoomUsers(@PathVariable Long roomId) {
+    public List<UserDTO> getRoomUsers(@PathVariable UUID roomId) {
         return roomService.getRoomUsers(roomId);
     }
 
     @PostMapping("/{roomId}/users")
-    public ResponseEntity<UserInRoom> addUsersToRoom(@PathVariable Long roomId, @RequestBody AddUserRequestDTO request, Principal principal){
+    public ResponseEntity<UserInRoom> addUsersToRoom(@PathVariable UUID roomId, @RequestBody AddUserRequestDTO request, Principal principal){
         UserInRoom userInRoom = roomService.createUserInRoom(roomId, request, principal.getName());
         return ResponseEntity.ok(userInRoom);
     }
 
     @GetMapping("/roomer/{userId}")
-    public ResponseEntity<List<RoomDTO>> getRoomsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<RoomDTO>> getRoomsByUserId(@PathVariable UUID userId) {
         List<RoomDTO> roomDTOs = roomService.getRoomsByUserId(userId);
         return roomDTOs.isEmpty() ? ResponseEntity.notFound().build() : ResponseEntity.ok(roomDTOs);
     }
@@ -57,7 +58,7 @@ public class RoomController {
 
     // TODO: where to delete
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteRoom(@PathVariable Long id, Principal principal) {
+    public ResponseEntity<Void> deleteRoom(@PathVariable UUID id, Principal principal) {
         roomService.deleteRoom(id, principal.getName());
         return ResponseEntity.noContent().build();
     }

@@ -1,4 +1,4 @@
-package com.bodimTikka.bodimTikka.Handler;
+package com.bodimTikka.bodimTikka.handler;
 
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.InvalidPaymentException;

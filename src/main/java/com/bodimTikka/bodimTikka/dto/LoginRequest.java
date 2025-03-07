@@ -1,4 +1,4 @@
-package com.bodimTikka.bodimTikka.DTO;
+package com.bodimTikka.bodimTikka.dto;
 
 import lombok.Builder;
 import lombok.Getter;

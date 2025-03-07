@@ -1,25 +1,23 @@
-package com.bodimTikka.bodimTikka.DTO;
+package com.bodimTikka.bodimTikka.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.List;
 import java.util.UUID;
+import java.util.List;
 
 @Getter
 @Setter
 @AllArgsConstructor
-@NoArgsConstructor
-public class RoomPaymentLogDTO {
+public class PaymentResponseDTO {
     private UUID paymentId;
+    private UUID roomId;
     private BigDecimal amount;
-    private Long fromUserId;
+    private Boolean isRepayment;
     private LocalDateTime paymentTimestamp;
     private String description;
-    private Boolean isRepayment;
-    private List<Long> toUserIds;
+    private List<PaymentRecordDTO> paymentRecords;
 }

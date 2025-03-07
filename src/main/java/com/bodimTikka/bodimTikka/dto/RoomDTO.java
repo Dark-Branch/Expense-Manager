@@ -1,15 +1,17 @@
-package com.bodimTikka.bodimTikka.DTO;
+package com.bodimTikka.bodimTikka.dto;
 
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.UUID;
+
 @Getter
 @Setter
 public class RoomDTO {
-    private Long id;
+    private UUID id;
     private String name;
 
-    public RoomDTO(Long id, String name) {
+    public RoomDTO(UUID id, String name) {
         this.id = id;
         this.name = name;
     }

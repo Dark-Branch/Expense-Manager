@@ -1,8 +1,8 @@
 package com.bodimTikka.bodimTikka.service;
 
-import com.bodimTikka.bodimTikka.DTO.AddUserRequestDTO;
-import com.bodimTikka.bodimTikka.DTO.RoomDTO;
-import com.bodimTikka.bodimTikka.DTO.UserDTO;
+import com.bodimTikka.bodimTikka.dto.AddUserRequestDTO;
+import com.bodimTikka.bodimTikka.dto.RoomDTO;
+import com.bodimTikka.bodimTikka.dto.UserDTO;
 import com.bodimTikka.bodimTikka.exceptions.InvalidRequestException;
 import com.bodimTikka.bodimTikka.exceptions.NotFoundException;
 import com.bodimTikka.bodimTikka.exceptions.UnauthorizedException;
@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -29,41 +30,45 @@ public class RoomService {
     private UserService userService;
 
     // TODO: handle null case?
-    public List<UserDTO> getRoomUsers(Long roomId) {
+    public List<UserDTO> getRoomUsers(UUID roomId) {
         List<UserInRoom> usersInRoom = userInRoomRepository.findUsersByRoomId(roomId);
         return usersInRoom.stream()
                 .map(uir -> new UserDTO(uir.getUser().getId(), uir.getUser().getName(), uir.getUser().getEmail()))
                 .collect(Collectors.toList());
     }
 
-    public List<Long> getRoomUserIDs(Long roomID){
+    public Boolean isUserInRoom(UUID userId, UUID roomId){
+        return userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(userId, roomId, true);
+    }
+
+    public List<UUID> getUserInRoomIDs(UUID roomID){
         return userInRoomRepository.findUserIdsByRoomId(roomID);
     }
 
-    // TODO: add main room mambers in get rooms dto and then can lazily load members for other rooms
-    public Optional<Room> getRoomById(Long id) {
+    // TODO: add main room members in get rooms dto and then can lazily load members for other rooms
+    public Optional<Room> getRoomById(UUID id) {
         return roomRepository.findById(id);
     }
 
-    public List<RoomDTO> getRoomsByUserId(Long userId) {
+    public List<RoomDTO> getRoomsByUserId(UUID userId) {
         List<Room> rooms = roomRepository.findRoomsByUserId(userId);
         return rooms.stream()
                 .map(room -> new RoomDTO(room.getId(), room.getName()))
                 .collect(Collectors.toList());
     }
 
-    public UserInRoom createUserInRoom(Long roomId, AddUserRequestDTO request, String email){
-        Long senderId = getUserByEmailIfAdmin(roomId, email);
+    public UserInRoom createUserInRoom(UUID roomId, AddUserRequestDTO request, String email){
+        UUID senderId = getUserByEmailIfAdmin(roomId, email);
         String name = request.getName();
         boolean isRegistered = request.getIsRegistered();
-        Long userId = request.getUserId();
+        UUID userId = request.getUserId();
 
         verify(senderId, roomId, name, isRegistered, userId);
 
         return saveUserToRoom(roomId, userId, name, isRegistered);
     }
 
-    private UserInRoom saveUserToRoom(Long roomId, Long userId, String name, boolean isRegistered) {
+    private UserInRoom saveUserToRoom(UUID roomId, UUID userId, String name, boolean isRegistered) {
         UserInRoom userInRoom = new UserInRoom();
         userInRoom.setUser(userId != null ? new User(userId) : null);
         userInRoom.setRoom(new Room(roomId));
@@ -74,8 +79,8 @@ public class RoomService {
         return userInRoom;
     }
 
-    private void verify(Long senderId, Long roomId, String name, boolean isRegistered, Long userId) {
-        if (!userInRoomRepository.existsByUserIdAndRoomId(senderId, roomId)){
+    private void verify(UUID senderId, UUID roomId, String name, boolean isRegistered, UUID userId) {
+        if (!userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(senderId, roomId, true)){
             throw new InvalidRequestException("Current user doesn't belong to the room");
         }
 
@@ -96,7 +101,7 @@ public class RoomService {
             }
         }
 
-        if (isRegistered && userInRoomRepository.existsByUserIdAndRoomId(userId, roomId)) {
+        if (isRegistered && userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(userId, roomId, true)) {
             throw new InvalidRequestException("User is already in the room");
         }
     }
@@ -110,21 +115,21 @@ public class RoomService {
         }
 
         Room createdRoom = roomRepository.save(room);
-        Long userId = userProjection.getId();
-        Long roomId = createdRoom.getId();
+        UUID userId = userProjection.getId();
+        UUID roomId = createdRoom.getId();
         userInRoomRepository.addUserToRoom(userId, roomId, userProjection.getName());
         userInRoomRepository.addAdminUser(userId, roomId);
 
         return createdRoom;
     }
 
-    public void deleteRoom(Long roomId, String email) {
+    public void deleteRoom(UUID roomId, String email) {
         getUserByEmailIfAdmin(roomId, email);
 
         roomRepository.deleteById(roomId);
     }
 
-    private Long getUserByEmailIfAdmin(Long roomId, String email) {
+    private UUID getUserByEmailIfAdmin(UUID roomId, String email) {
         // FIXME: is this best error
         if (!roomRepository.existsById(roomId)){
             throw new InvalidRequestException("Invalid room ID");
@@ -138,7 +143,7 @@ public class RoomService {
         return userProjection.getId();
     }
 
-    public boolean existsById(Long roomId) {
+    public boolean existsById(UUID roomId) {
         return roomRepository.existsById(roomId);
     }
 }

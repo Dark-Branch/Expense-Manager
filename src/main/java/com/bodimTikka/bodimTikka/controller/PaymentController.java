@@ -1,6 +1,6 @@
 package com.bodimTikka.bodimTikka.controller;
 
-import com.bodimTikka.bodimTikka.DTO.*;
+import com.bodimTikka.bodimTikka.dto.*;
 import com.bodimTikka.bodimTikka.model.Payment;
 import com.bodimTikka.bodimTikka.service.PaymentService;
 import jakarta.validation.Valid;
@@ -45,18 +45,19 @@ public class PaymentController {
 
     @GetMapping("/room/{id}")
     public ResponseEntity<List<RoomPaymentLogDTO>> getPaymentByRoomId(
-            @PathVariable Long id,
+            @PathVariable UUID id,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit,
             Principal principal) {
         return ResponseEntity.ok(paymentService.getLastRoomPayments(id, limit, page, principal.getName()));
     }
 
+    // FIXME: address will be so long
     @GetMapping("/room/{id}/users")
     public ResponseEntity<List<UserPaymentLogDTO>> getPaymentByRoomIdAndUsers(
-            @PathVariable Long id,
-            @RequestParam(required = true) Long user1,
-            @RequestParam(required = true) Long user2,
+            @PathVariable UUID id,
+            @RequestParam(required = true) UUID user1,
+            @RequestParam(required = true) UUID user2,
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "10") int limit,
             Principal principal) {
@@ -65,7 +66,7 @@ public class PaymentController {
 
     @GetMapping("/room/{id}/balances")
     public ResponseEntity<List<RoomPairBalanceDTO>> getPairwiseBalances(
-            @PathVariable Long id) {
+            @PathVariable UUID id) {
         return ResponseEntity.ok(paymentService.getPairwiseBalances(id));
     }
 }

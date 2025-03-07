@@ -1,17 +1,17 @@
 CREATE TABLE "user" (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     email VARCHAR(255) UNIQUE,      -- nullable for unregistered users
     password VARCHAR(255)           -- nullable
 );
 
 CREATE TABLE room (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL
 );
 
 CREATE TABLE user_in_room (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID,                         -- Nullable for unregistered users
     room_id UUID NOT NULL,
     name VARCHAR(255) NOT NULL,          -- Display name for the room
@@ -37,7 +37,7 @@ CREATE TABLE payment (
 CREATE INDEX idx_payment_timestamp ON payment(payment_timestamp DESC);
 
 CREATE TABLE payment_record (
-    id UUID PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     -- from_id < to_id
     from_user_id UUID NOT NULL,
     to_user_id UUID NOT NULL,

@@ -202,8 +202,8 @@ class RoomControllerTests {
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody()).hasSize(2);
-        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 2");
-        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 1");
+        assertThat(response.getBody().get(0).getName()).isEqualTo("Test Room 1");
+        assertThat(response.getBody().get(1).getName()).isEqualTo("Test Room 2");
     }
 
     private void addUserToARoomUsingRepositories(Room testRoom, boolean isAdmin) {

@@ -28,4 +28,5 @@ public interface UserRepository extends JpaRepository<User, UUID> {
     @Query("DELETE FROM User u WHERE u.email = :email")
     void removeByEmail(@Param("email") String email);
 
+    UserDTO getUserByEmail(String email);
 }

@@ -81,7 +81,7 @@ public class UserControllerTests {
         ResponseEntity<?> response = restTemplate.exchange(baseUrl, HttpMethod.DELETE, entity, Void.class);
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
 
-        UserDTO user1 = userService.getUserByEmail(user.getEmail());
+        UserDTO user1 = userRepository.getUserByEmail(user.getEmail());
         assertThat(user1).isNull();
     }
 }

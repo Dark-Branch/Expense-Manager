@@ -37,7 +37,7 @@ public class RoomService {
                     if (uir.isRegistered()) {
                         // Registered user: get details from User entity
                         User user = uir.getUser();
-                        return new UserDTO(user.getId(), user.getName(), user.getEmail());
+                        return new UserDTO(uir.getId(), user.getName(), user.getEmail());
                     } else {
                         // Unregistered user: use name from UserInRoom, no email
                         return new UserDTO(uir.getId(), uir.getName(), null);

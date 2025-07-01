@@ -45,4 +45,10 @@ public class UserService {
     public Optional<UserDTO> findUserProjectionByEmail(String email) {
         return userRepository.findUserProjectionByEmail(email);
     }
+
+    public User getUserObjByEmail(String email) {
+        return userRepository.findByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found with given E-mail"));
+
+    }
 }

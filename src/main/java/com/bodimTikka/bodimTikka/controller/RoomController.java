@@ -62,4 +62,18 @@ public class RoomController {
         roomService.deleteRoom(id, principal.getName());
         return ResponseEntity.noContent().build();
     }
+
+    @DeleteMapping("/roomer")
+    public ResponseEntity<Void> deleteUserFromRoom(@RequestParam UUID uirId, @RequestParam UUID roomId ) {
+        roomService.deleteUserFromRoom(uirId, roomId );
+        return ResponseEntity.ok().build();
+    }
+
+    @PostMapping("/AddAccount")
+    public ResponseEntity<?> addAccountToMember(@RequestParam String email, @RequestParam UUID uirId ) {
+        roomService.addAccountToMember(email , uirId );
+        return ResponseEntity.ok().build();
+    }
+
+
 }

@@ -19,6 +19,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @Service
 public class RoomService {
@@ -33,10 +35,18 @@ public class RoomService {
     public List<UserDTO> getRoomUsers(UUID roomId) {
         List<UserInRoom> usersInRoom = userInRoomRepository.findUsersByRoomId(roomId);
         return usersInRoom.stream()
-                .map(uir -> new UserDTO(uir.getUser().getId(), uir.getUser().getName(), uir.getUser().getEmail()))
+                .map(uir -> {
+                    if (uir.isRegistered()) {
+                        // Registered user: get details from User entity
+                        User user = uir.getUser();
+                        return new UserDTO(uir.getId(), user.getName(), user.getEmail());
+                    } else {
+                        // Unregistered user: use name from UserInRoom, no email
+                        return new UserDTO(uir.getId(), uir.getName(), null);
+                    }
+                })
                 .collect(Collectors.toList());
     }
-
     public Boolean isUserInRoom(UUID userId, UUID roomId){
         return userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(userId, roomId, true);
     }
@@ -145,5 +155,63 @@ public class RoomService {
 
     public boolean existsById(UUID roomId) {
         return roomRepository.existsById(roomId);
+    }
+
+
+    public void deleteUserFromRoom(UUID uirId, UUID roomId ) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            throw new UnauthorizedException("User is not authenticated.");
+        }
+        String email = authentication.getName();
+        UUID adminUirId = userService.findUserProjectionByEmail(email)
+                .orElseThrow(() -> new NotFoundException("User not found."))
+                .getId();
+
+
+        if (!userInRoomRepository.existsByUserInRoomIdAndRoomIdAndIsStillAMember(uirId, roomId, true)) {
+            throw new InvalidRequestException("User is not in the room or already removed.");
+        }
+        if (!userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(adminUirId, roomId, true)) {
+            throw new InvalidRequestException("User is not in the room or already removed.");
+        }
+
+        if (!userInRoomRepository.isUserAdmin(adminUirId, roomId)) {
+            throw new UnauthorizedException("You are not an admin of this room.");
+        }
+
+        UserInRoom userInRoom = userInRoomRepository.findByUirIdAndRoomId(uirId, roomId)
+                .orElseThrow(() -> new NotFoundException("User not found in the room."));
+
+
+        userInRoom.setStillAMember(false);
+        userInRoomRepository.save(userInRoom);
+    }
+
+
+    public void addAccountToMember(String email, UUID uirId) {
+        User user = userService.getUserObjByEmail(email);
+
+        UUID roomId = userInRoomRepository.findById(uirId)
+                .orElseThrow(() -> new NotFoundException("User not found in the room."))
+                .getRoom()
+                .getId();
+
+        if (user.getId() == null) {
+            throw new InvalidRequestException("User ID cannot be null.");
+        }
+        if (user.getEmail() == null || user.getEmail().isEmpty()) {
+            throw new InvalidRequestException("User email cannot be null or empty.");
+        }
+        if (userInRoomRepository.existsByUserIdAndRoomIdAndIsStillAMember(user.getId(), roomId, true)) {
+            throw new InvalidRequestException("User is already a member of the room.");
+        }
+
+        UserInRoom userInRoom = userInRoomRepository.findById(uirId)
+                .orElseThrow(() -> new NotFoundException("User not found in the room."));
+
+        userInRoom.setRegistered(true);
+        userInRoom.setUser(user);
+        userInRoomRepository.save(userInRoom);
     }
 }

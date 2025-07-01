@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface UserInRoomRepository extends JpaRepository<UserInRoom, UUID> {
@@ -32,4 +33,12 @@ public interface UserInRoomRepository extends JpaRepository<UserInRoom, UUID> {
 
     @Query("SELECT uir.isAdmin FROM UserInRoom uir WHERE uir.user.id = :userId AND uir.room.id = :roomId")
     Boolean isUserAdmin(@Param("userId") UUID userId, @Param("roomId") UUID roomId);
+
+
+
+    @Query("SELECT COUNT(uir) > 0 FROM UserInRoom uir WHERE uir.id = :uirId AND uir.room.id = :roomId AND uir.isStillAMember = :isStillAMember")
+    boolean existsByUserInRoomIdAndRoomIdAndIsStillAMember(@Param("uirId") UUID uirId, @Param("roomId") UUID roomId, @Param("isStillAMember") boolean isStillAMember);
+
+    @Query("SELECT uir FROM UserInRoom uir WHERE uir.id = :uirId AND uir.room.id = :roomId")
+    Optional<UserInRoom> findByUirIdAndRoomId(@Param("uirId") UUID uirId, @Param("roomId") UUID roomId);
 }

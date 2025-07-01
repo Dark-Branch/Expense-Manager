@@ -1,5 +1,6 @@
 package com.bodimTikka.bodimTikka.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -22,7 +23,7 @@ public class PaymentRequestDTO {
     @Positive(message = "Total amount must be a positive value.")
     private BigDecimal totalAmount;
 
-    @NotNull(message = "Repayment status is required.")
+    @JsonProperty("isRepayment")
     private boolean isRepayment;
 
     @NotNull(message = "Payer ID is required.")

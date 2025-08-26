@@ -1,4 +1,4 @@
-package com.bodimtikka.exceptions;
+package com.bodimtikka.exception;
 
 public class NotFoundException extends RuntimeException {
     public NotFoundException(String message) {

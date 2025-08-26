@@ -1,4 +1,4 @@
-package com.bodimtikka.exceptions;
+package com.bodimtikka.exception;
 
 public class InvalidRequestException extends RuntimeException {
     public InvalidRequestException(String message) {

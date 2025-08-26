@@ -1,30 +1,38 @@
 package com.bodimtikka.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
-@Table(name = "room")
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Table(name = "rooms")
 public class Room {
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID id;
+    private Long id;
 
-    @Column(nullable = false)
     private String name;
+
+    // Link to UserRoom
+    @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference
+    private Set<UserRoom> userRooms = new HashSet<>();
+
+    @OneToMany(mappedBy = "room")
+    private Set<Transaction> transactions;
 
     public Room(String name) {
         this.name = name;
     }
 
-    public Room(UUID roomId) {
-        this.id = roomId;
+    public Room() {
     }
 }

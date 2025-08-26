@@ -30,8 +30,8 @@ dependencies {
 	developmentOnly 'org.springframework.boot:spring-boot-devtools'
 
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	testImplementation 'com.h2database:h2'
-	implementation 'org.postgresql:postgresql'
+	implementation 'com.h2database:h2'
+//	implementation 'org.postgresql:postgresql'
 
 	compileOnly 'org.projectlombok:lombok'
 	annotationProcessor 'org.projectlombok:lombok'
@@ -44,16 +44,15 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.springframework.security:spring-security-test'
 	implementation 'org.springframework.boot:spring-boot-starter-validation'
-//	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0' // or the latest version
-//	testImplementation 'org.junit.jupiter:junit-jupiter-engine:5.7.0' // for running the tests
-//	testImplementation 'org.junit.jupiter:junit-jupiter-params:5.7.0' // optional for parameterized tests
-//	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 	implementation 'jakarta.validation:jakarta.validation-api:3.0.0'
 	implementation 'org.glassfish:javax.el:3.0.0'
 }
 
 tasks.named('test') {
 	useJUnitPlatform()
+}
+test {
+	systemProperty "spring.profiles.active", "test"
 }
 jar {
 	enabled = false

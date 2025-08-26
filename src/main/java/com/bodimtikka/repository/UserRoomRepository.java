@@ -1,6 +1,5 @@
 package com.bodimtikka.repository;
 
-import com.bodimtikka.model.Participant;
 import com.bodimtikka.model.UserRoom;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;

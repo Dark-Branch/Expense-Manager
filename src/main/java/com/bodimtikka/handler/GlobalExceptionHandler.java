@@ -1,14 +1,9 @@
 package com.bodimtikka.handler;
 
-import com.bodimtikka.exceptions.InvalidRequestException;
-import com.bodimtikka.exceptions.InvalidPaymentException;
-import com.bodimtikka.exceptions.NotFoundException;
-import com.bodimtikka.exceptions.UnauthorizedException;
+import com.bodimtikka.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.validation.FieldError;
-import org.springframework.validation.ObjectError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -18,9 +13,29 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidation(MethodArgumentNotValidException ex) {
+        List<Map<String, String>> errors = ex.getBindingResult().getFieldErrors().stream()
+                .map(err -> {
+                    return Map.of(
+                            "field", err.getField(),
+                            "message", Objects.requireNonNull(err.getDefaultMessage(), "Validation message missing")
+                    );
+                })
+                .toList();
+        return ResponseEntity.badRequest().body(Map.of("errors", errors));
+    }
+
+    @ExceptionHandler(ResourceAlreadyExistsException.class)
+    public ResponseEntity<Map<String, String>> handleResourceAlreadyExists(ResourceAlreadyExistsException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(Map.of("message", ex.getMessage()));
+    }
 
     @ExceptionHandler(NotFoundException.class)
     public ResponseEntity<Map<String, Object>> handleNotFoundException(NotFoundException ex) {
@@ -75,26 +90,6 @@ public class GlobalExceptionHandler {
         String paramName = ex.getParameterName();
         String errorMessage = "Required parameter '" + paramName + "' is missing.";
         return ResponseEntity.badRequest().body(errorMessage);
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("timestamp", LocalDateTime.now());
-        response.put("status", HttpStatus.BAD_REQUEST.value());
-
-        List<ObjectError> globalErrors = ex.getBindingResult().getGlobalErrors();
-        List<FieldError> fieldErrors = ex.getBindingResult().getFieldErrors();
-
-        if (!globalErrors.isEmpty()) {
-            response.put("globalErrors", globalErrors);
-        }
-
-        if (!fieldErrors.isEmpty()) {
-            response.put("fieldErrors", fieldErrors);
-        }
-
-        return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(InvalidPaymentException.class)

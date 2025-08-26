@@ -1,9 +1,12 @@
 package com.bodimtikka.controller;
 
+import com.bodimtikka.dto.auth.LoginRequest;
+import com.bodimtikka.dto.auth.RegisterRequest;
+import com.bodimtikka.dto.auth.UserResponse;
 import com.bodimtikka.model.User;
 import com.bodimtikka.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +21,7 @@ public class AuthController {
      * Register a new user
      */
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = authService.registerUser(request.getName(), request.getEmail(), request.getPassword());
         return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
     }
@@ -27,31 +30,8 @@ public class AuthController {
      * Login a user
      */
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = authService.authenticate(request.getEmail(), request.getPassword());
         return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
-    }
-
-    // --- Request/Response DTOs ---
-
-    @Data
-    public static class RegisterRequest {
-        private String name;
-        private String email;
-        private String password;
-    }
-
-    @Data
-    public static class LoginRequest {
-        private String email;
-        private String password;
-    }
-
-    @Data
-    @AllArgsConstructor
-    public static class UserResponse {
-        private Long id;
-        private String name;
-        private String email;
     }
 }

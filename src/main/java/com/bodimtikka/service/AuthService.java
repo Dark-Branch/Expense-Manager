@@ -1,5 +1,6 @@
 package com.bodimtikka.service;
 
+import com.bodimtikka.exception.ResourceAlreadyExistsException;
 import com.bodimtikka.model.User;
 import com.bodimtikka.model.UserAuth;
 import com.bodimtikka.repository.UserAuthRepository;
@@ -30,7 +31,7 @@ public class AuthService {
      */
     public User registerUser(String name, String email, String rawPassword) {
         if (userRepository.existsByEmail(email)) {
-            throw new RuntimeException("Email already registered");
+            throw new ResourceAlreadyExistsException("Email");
         }
 
         User user = new User();

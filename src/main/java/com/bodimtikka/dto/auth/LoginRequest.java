@@ -1,4 +1,4 @@
-package com.bodimtikka.dto;
+package com.bodimtikka.dto.auth;
 
 import lombok.Builder;
 import lombok.Getter;

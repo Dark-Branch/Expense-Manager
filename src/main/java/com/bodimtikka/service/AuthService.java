@@ -1,53 +1,86 @@
 package com.bodimtikka.service;
 
-import com.bodimtikka.dto.LoginRequest;
-import com.bodimtikka.dto.SignupRequest;
-import com.bodimtikka.exceptions.InvalidRequestException;
 import com.bodimtikka.model.User;
+import com.bodimtikka.model.UserAuth;
+import com.bodimtikka.repository.UserAuthRepository;
 import com.bodimtikka.repository.UserRepository;
-import com.bodimtikka.security.JwtUtils;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.Optional;
+
 @Service
 public class AuthService {
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private PasswordEncoder passwordEncoder;
 
-    @Autowired
-    private JwtUtils jwtUtils;
+    private final UserRepository userRepository;
+    private final UserAuthRepository userAuthRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public String authenticateUser(LoginRequest loginRequest) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(
-                        loginRequest.getEmail(),
-                        loginRequest.getPassword()
-                )
-        );
-
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-        return jwtUtils.generateJwtToken(authentication);
+    public AuthService(UserRepository userRepository,
+                       UserAuthRepository userAuthRepository,
+                       PasswordEncoder passwordEncoder) {
+        this.userRepository = userRepository;
+        this.userAuthRepository = userAuthRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    public User registerUser(SignupRequest signupRequest) {
-        if (userRepository.existsByEmail(signupRequest.getEmail())) {
-            throw new InvalidRequestException("Error: Email is already taken!");
+    /**
+     * Registers a new user along with authentication details.
+     */
+    public User registerUser(String name, String email, String rawPassword) {
+        if (userRepository.existsByEmail(email)) {
+            throw new RuntimeException("Email already registered");
         }
 
         User user = new User();
-        user.setName(signupRequest.getName());
-        user.setEmail(signupRequest.getEmail());
-        user.setPassword(passwordEncoder.encode(signupRequest.getPassword()));
+        user.setName(name);
+        user.setEmail(email);
+        userRepository.save(user);
 
-        return userRepository.save(user);
+        UserAuth auth = new UserAuth();
+        auth.setUser(user);
+        auth.setPasswordHash(passwordEncoder.encode(rawPassword));
+        auth.setRoles("ROLE_USER");
+        auth.setActive(true);
+        auth.setLastLogin(LocalDateTime.now());
+
+        userAuthRepository.save(auth);
+
+        return user;
+    }
+
+    /**
+     * Authenticate a user by email and password
+     */
+    public User authenticate(String email, String rawPassword) {
+        Optional<UserAuth> authOpt = userAuthRepository.findByUserEmail(email);
+
+        if (authOpt.isEmpty() || !authOpt.get().isActive()) {
+            throw new RuntimeException("Invalid credentials or inactive account");
+        }
+
+        UserAuth auth = authOpt.get();
+
+        if (!passwordEncoder.matches(rawPassword, auth.getPasswordHash())) {
+            throw new RuntimeException("Invalid credentials");
+        }
+
+        // Update last login
+        auth.setLastLogin(LocalDateTime.now());
+        userAuthRepository.save(auth);
+
+        return auth.getUser();
+    }
+
+    /**
+     * Update user password
+     */
+    public void updatePassword(Long userId, String newRawPassword) {
+        UserAuth auth = userAuthRepository.findByUserId(userId)
+                .orElseThrow(() -> new RuntimeException("User auth not found"));
+
+        auth.setPasswordHash(passwordEncoder.encode(newRawPassword));
+        userAuthRepository.save(auth);
     }
 }

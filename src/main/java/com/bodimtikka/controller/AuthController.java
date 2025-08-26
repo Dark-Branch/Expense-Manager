@@ -1,43 +1,57 @@
 package com.bodimtikka.controller;
 
-import com.bodimtikka.dto.JwtResponse;
-import com.bodimtikka.dto.LoginRequest;
-import com.bodimtikka.dto.SignupRequest;
 import com.bodimtikka.model.User;
-import com.bodimtikka.repository.UserRepository;
-import com.bodimtikka.security.JwtUtils;
 import com.bodimtikka.service.AuthService;
-import jakarta.validation.Valid;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/auth")
+@RequestMapping("/auth")
+@AllArgsConstructor
 public class AuthController {
-    @Autowired
-    private AuthenticationManager authenticationManager;
-    @Autowired
-    private UserRepository userRepository;
-    @Autowired
-    private AuthService authService;
-    @Autowired
-    private JwtUtils jwtUtils;
 
-    @PostMapping("/signup")
-    public ResponseEntity<?> registerUser(@Valid @RequestBody SignupRequest signupRequest) {
-        User registeredUser = authService.registerUser(signupRequest);
-        return ResponseEntity.ok("User registered successfully: " + registeredUser.getEmail());
+    private final AuthService authService;
+
+    /**
+     * Register a new user
+     */
+    @PostMapping("/register")
+    public ResponseEntity<UserResponse> register(@RequestBody RegisterRequest request) {
+        User user = authService.registerUser(request.getName(), request.getEmail(), request.getPassword());
+        return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
     }
 
+    /**
+     * Login a user
+     */
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
-        String jwt = authService.authenticateUser(loginRequest);
+    public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
+        User user = authService.authenticate(request.getEmail(), request.getPassword());
+        return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
+    }
 
-        return ResponseEntity.ok(new JwtResponse(jwt));
+    // --- Request/Response DTOs ---
+
+    @Data
+    public static class RegisterRequest {
+        private String name;
+        private String email;
+        private String password;
+    }
+
+    @Data
+    public static class LoginRequest {
+        private String email;
+        private String password;
+    }
+
+    @Data
+    @AllArgsConstructor
+    public static class UserResponse {
+        private Long id;
+        private String name;
+        private String email;
     }
 }

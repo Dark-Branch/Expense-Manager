@@ -1,38 +1,30 @@
 package com.bodimtikka.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.Getter;
+import lombok.Setter;
 
-import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
-@Entity
-@Table(name = "\"user\"")  // Use double quotes for reserved keywords in PostgreSQL
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
+@Entity
+@Table(name = "users")
 public class User {
-
     @Id
-    // TODO: is this needed
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private UUID id;
+    private Long id;
 
-    @Column(nullable = false)
     private String name;
+    private String email;  // unique, used for login reference
 
-    @Column(unique = true)
-    private String email;
+    // Lazy fetch to prevent unnecessary joins when accessing User directly
+    @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
+    private Set<Participant> participants = new HashSet<>();
 
-    private String password;
-
-    public User(String name, String email, String password) {
-        this.name = name;
-        this.email = email;
-        this.password = password;
-    }
-
-    public User(UUID userId) {
-        this.id = userId;
-    }
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+    private UserAuth auth;
 }

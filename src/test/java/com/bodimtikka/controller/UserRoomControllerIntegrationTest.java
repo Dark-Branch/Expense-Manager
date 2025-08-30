@@ -45,8 +45,6 @@ class UserRoomControllerIntegrationTest {
     @BeforeEach
     void setup() {
         userRoomRepository.deleteAll();
-        participantRepository.deleteAll();
-        roomRepository.deleteAll();
 
         participant = new Participant();
         participant.setDisplayName("Kevin");

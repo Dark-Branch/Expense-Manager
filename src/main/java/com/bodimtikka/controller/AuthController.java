@@ -1,10 +1,11 @@
 package com.bodimtikka.controller;
 
+import com.bodimtikka.dto.auth.AuthResponse;
 import com.bodimtikka.dto.auth.LoginRequest;
 import com.bodimtikka.dto.auth.RegisterRequest;
-import com.bodimtikka.dto.auth.UserResponse;
 import com.bodimtikka.model.User;
 import com.bodimtikka.service.AuthService;
+import com.bodimtikka.security.JwtService;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -16,22 +17,25 @@ import org.springframework.web.bind.annotation.*;
 public class AuthController {
 
     private final AuthService authService;
+    private final JwtService jwtService;
 
     /**
      * Register a new user
      */
     @PostMapping("/register")
-    public ResponseEntity<UserResponse> register(@Valid @RequestBody RegisterRequest request) {
+    public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         User user = authService.registerUser(request.getName(), request.getEmail(), request.getPassword());
-        return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
+        String token = jwtService.generateToken(user.getEmail());
+        return ResponseEntity.ok(new AuthResponse(user.getId(), user.getName(), user.getEmail(), token));
     }
 
     /**
      * Login a user
      */
     @PostMapping("/login")
-    public ResponseEntity<UserResponse> login(@Valid @RequestBody LoginRequest request) {
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         User user = authService.authenticate(request.getEmail(), request.getPassword());
-        return ResponseEntity.ok(new UserResponse(user.getId(), user.getName(), user.getEmail()));
+        String token = jwtService.generateToken(user.getEmail());
+        return ResponseEntity.ok(new AuthResponse(user.getId(), user.getName(), user.getEmail(), token));
     }
 }

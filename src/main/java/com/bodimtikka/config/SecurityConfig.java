@@ -76,6 +76,8 @@
 
 package com.bodimtikka.config;
 
+import com.bodimtikka.security.JwtAuthenticationFilter;
+import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -84,9 +86,13 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+@AllArgsConstructor
 @Configuration
 public class SecurityConfig {
+
+    private final JwtAuthenticationFilter jwtAuthFilter;
 
     /**
      * Password encoder bean for hashing passwords
@@ -115,7 +121,8 @@ public class SecurityConfig {
                         .requestMatchers("/auth/**").permitAll() // public endpoints for login/register
                         .anyRequest().authenticated()           // all other endpoints require auth
                 )
-                .httpBasic(httpBasic -> {}); // simple basic auth
+                .headers(headers -> headers.frameOptions().sameOrigin())
+                .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }

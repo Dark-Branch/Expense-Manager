@@ -41,7 +41,7 @@ public class AuthControllerIntegrationTest {
     }
 
     @Test
-    public void testRegisterAndLogin() throws Exception {
+    public void testRegisterAndLogin_withJwt() throws Exception {
         // --- Register ---
         String registerJson = """
                 {
@@ -56,7 +56,8 @@ public class AuthControllerIntegrationTest {
                         .content(registerJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Kevin Sanjula")))
-                .andExpect(jsonPath("$.email", is("kevin@example.com")));
+                .andExpect(jsonPath("$.email", is("kevin@example.com")))
+                .andExpect(jsonPath("$.token").isNotEmpty());
 
         // Verify user saved in DB
         User user = userRepository.findByEmail("kevin@example.com").orElseThrow();
@@ -75,7 +76,8 @@ public class AuthControllerIntegrationTest {
                         .content(loginJson))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Kevin Sanjula")))
-                .andExpect(jsonPath("$.email", is("kevin@example.com")));
+                .andExpect(jsonPath("$.email", is("kevin@example.com")))
+                .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
     // --- Missing Fields ---

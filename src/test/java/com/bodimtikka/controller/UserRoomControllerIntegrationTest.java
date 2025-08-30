@@ -57,7 +57,7 @@ class UserRoomControllerIntegrationTest {
 
     @Test
     @Transactional
-    @WithMockUser(username = "kevin@example.com", roles = {"USER"})
+    @WithMockUser(username = "kevin@example.com")
     void testUserRoomWorkflow() throws Exception {
 
         // --- Add participant to room ---

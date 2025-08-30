@@ -1,6 +1,7 @@
 package com.bodimtikka.handler;
 
 import com.bodimtikka.exception.*;
+import com.bodimtikka.security.JwtValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -45,6 +46,14 @@ public class GlobalExceptionHandler {
         response.put("message", ex.getMessage());
 
         return new ResponseEntity<>(response, HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(JwtValidationException.class)
+    public ResponseEntity<Map<String, String>> handleJwtException(JwtValidationException ex) {
+        Map<String, String> response = new HashMap<>();
+        response.put("error", "Unauthorized");
+        response.put("message", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
     }
 
     // FIXME: for testing

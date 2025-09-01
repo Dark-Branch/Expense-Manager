@@ -1,6 +1,7 @@
 package com.bodimtikka.config;
 
 import com.bodimtikka.security.JwtAuthenticationFilter;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.AllArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -46,6 +47,12 @@ public class SecurityConfig {
                         .anyRequest().authenticated()           // all other endpoints require auth
                 )
                 .headers(headers -> headers.frameOptions().sameOrigin())
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            // 401 for unauthenticated requests
+                            response.sendError(HttpServletResponse.SC_UNAUTHORIZED, authException.getMessage());
+                        })
+                )
                 .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

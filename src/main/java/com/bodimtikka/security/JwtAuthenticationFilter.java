@@ -1,6 +1,5 @@
 package com.bodimtikka.security;
 
-import com.bodimtikka.model.UserAuth;
 import com.bodimtikka.repository.UserAuthRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;

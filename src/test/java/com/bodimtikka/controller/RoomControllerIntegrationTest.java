@@ -4,7 +4,6 @@ import com.bodimtikka.dto.room.RoomRequest;
 import com.bodimtikka.dto.room.RoomResponse;
 import com.bodimtikka.dto.room.RoomSummaryResponse;
 import com.bodimtikka.model.User;
-import com.bodimtikka.repository.ParticipantRepository;
 import com.bodimtikka.repository.RoomRepository;
 import com.bodimtikka.repository.UserRepository;
 import com.bodimtikka.repository.UserRoomRepository;
@@ -42,9 +41,6 @@ public class RoomControllerIntegrationTest {
     private RoomRepository roomRepository;
 
     @Autowired
-    private ParticipantRepository participantRepository;
-
-    @Autowired
     private UserRoomRepository userRoomRepository;
 
     @Autowired
@@ -59,7 +55,6 @@ public class RoomControllerIntegrationTest {
     @BeforeEach
     public void setup() {
         userRoomRepository.deleteAll();
-        participantRepository.deleteAll();
         roomRepository.deleteAll();
         userRepository.deleteAll();
 
@@ -86,7 +81,7 @@ public class RoomControllerIntegrationTest {
                 .andExpect(jsonPath("$.name", is("My Room")))
                 .andExpect(jsonPath("$.owner.id", is(testUser.getId().intValue())))
                 .andExpect(jsonPath("$.participants", hasSize(1)))
-                .andExpect(jsonPath("$.participants[0].id", is(testUser.getId().intValue())));
+                .andExpect(jsonPath("$.participants[0].userId", is(testUser.getId().intValue())));
     }
 
     @Test
@@ -264,7 +259,7 @@ public class RoomControllerIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(1)))
                 .andExpect(jsonPath("$[0].name", is("My Room")))
                 .andExpect(jsonPath("$[0].participants", hasSize(1)))
-                .andExpect(jsonPath("$[0].participants[0].participantId").exists());
+                .andExpect(jsonPath("$[0].participants[0].userId").exists());
     }
 
     @Test
@@ -289,8 +284,8 @@ public class RoomControllerIntegrationTest {
                         .header("Authorization", "Bearer " + jwtToken))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[0].participants[0].participantId").exists())
-                .andExpect(jsonPath("$[1].participants[0].participantId").exists());
+                .andExpect(jsonPath("$[0].participants[0].userId").exists())
+                .andExpect(jsonPath("$[1].participants[0].userId").exists());
     }
 
     @Test

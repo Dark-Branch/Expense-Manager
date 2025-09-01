@@ -12,11 +12,14 @@ import java.util.List;
 public interface UserRoomRepository extends JpaRepository<UserRoom, Long> {
 
     // Find all UserRooms for a given participant
-    List<UserRoom> findByParticipantId(Long participantId);
+    List<UserRoom> findByUserId(Long userId);
 
-    // UserRoom -> Participant -> User -> id
-    List<UserRoom> findByParticipantUserId(Long userId);
 
     @Query("SELECT ur FROM UserRoom ur WHERE ur.room.id = :roomId")
     List<UserRoom> findUserRoomsByRoomId(@Param("roomId") Long roomId);
+
+    // Check if a given user is still an active member of the room
+    boolean existsByRoomIdAndUserIdAndIsStillAMemberTrue(Long roomId, Long userId);
+
+    boolean existsByRoomIdAndNicknameAndIsStillAMemberTrue(Long roomId, String nickname);
 }

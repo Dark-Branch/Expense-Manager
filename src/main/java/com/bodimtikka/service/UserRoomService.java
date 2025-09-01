@@ -1,46 +1,65 @@
 package com.bodimtikka.service;
 
-import com.bodimtikka.dto.ParticipantDTO;
 import com.bodimtikka.dto.RoomDTO;
-import com.bodimtikka.dto.UserRoomDTO;
-import com.bodimtikka.model.Participant;
+import com.bodimtikka.dto.userroom.UserRoomDTO;
+import com.bodimtikka.exception.MemberAlreadyExistsException;
+import com.bodimtikka.exception.MemberAlreadyRemovedException;
 import com.bodimtikka.model.Room;
+import com.bodimtikka.model.User;
 import com.bodimtikka.model.UserRoom;
-import com.bodimtikka.repository.ParticipantRepository;
 import com.bodimtikka.repository.RoomRepository;
+import com.bodimtikka.repository.UserRepository;
 import com.bodimtikka.repository.UserRoomRepository;
+import lombok.AllArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 
 @Service
+@AllArgsConstructor
 public class UserRoomService {
 
     private final UserRoomRepository userRoomRepository;
-    private final ParticipantRepository participantRepository;
     private final RoomRepository roomRepository;
-
-    public UserRoomService(UserRoomRepository userRoomRepository, ParticipantRepository participantRepository, RoomRepository roomRepository) {
-        this.userRoomRepository = userRoomRepository;
-        this.participantRepository = participantRepository;
-        this.roomRepository = roomRepository;
-    }
+    private final UserRepository userRepository;
 
     /**
      * Add a participant to a room
      */
-    public UserRoomDTO addParticipantToRoom(Long participantId, Long roomId, String nickname) {
-        Participant participant = participantRepository.findById(participantId)
-                .orElseThrow(() -> new IllegalArgumentException("Participant not found"));
-
+    public UserRoomDTO addMemberToRoom(Long requesterId, Long roomId, Long userId, String nickname) {
         Room room = roomRepository.findById(roomId)
                 .orElseThrow(() -> new IllegalArgumentException("Room not found"));
 
-        UserRoom userRoom = new UserRoom(participant, room, nickname);
-        userRoom.setStillAMember(true);
-        userRoom = userRoomRepository.save(userRoom);
+        // Check requester is a member
+        boolean isMember = userRoomRepository.existsByRoomIdAndUserIdAndIsStillAMemberTrue(roomId, requesterId);
+        if (!isMember) {
+            throw new AccessDeniedException("You must be a member of the room to add others");
+        }
 
-        return mapToDTO(userRoom);
+        // Check duplicate
+        if (userId != null) {
+            boolean exists = userRoomRepository.existsByRoomIdAndUserIdAndIsStillAMemberTrue(roomId, userId);
+            if (exists) {
+                throw new MemberAlreadyExistsException("User is already a member of this room");
+            }
+        } else {
+            boolean nicknameExists = userRoomRepository.existsByRoomIdAndNicknameAndIsStillAMemberTrue(roomId, nickname);
+            if (nicknameExists) {
+                throw new MemberAlreadyExistsException("A member with this nickname already exists in the room");
+            }
+        }
+
+        User user = null;
+        if (userId != null) {
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> new IllegalArgumentException("User not found"));
+        }
+
+        UserRoom member = new UserRoom(user, room, nickname);
+        userRoomRepository.save(member);
+
+        return mapToDTO(member);
     }
 
     /**
@@ -64,7 +83,7 @@ public class UserRoomService {
      * List all rooms a participant is part of
      */
     public List<UserRoomDTO> getRoomsForParticipant(Long participantId) {
-        return userRoomRepository.findByParticipantId(participantId)
+        return userRoomRepository.findByUserId(participantId)
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
@@ -72,16 +91,40 @@ public class UserRoomService {
 
     // --- Mapping Helper ---
     private UserRoomDTO mapToDTO(UserRoom userRoom) {
-        Participant participant = userRoom.getParticipant();
+        User user = userRoom.getUser();
         Room room = userRoom.getRoom();
 
         return new UserRoomDTO(
-                userRoom.getId(),
-                new ParticipantDTO(participant.getId(), participant.getDisplayName()),
+                user == null ? null : user.getId(),
                 new RoomDTO(room.getId(), room.getName()),
-                userRoom.getNickname(),
-                userRoom.isStillAMember(),
-                userRoom.getJoinedAt()
+                userRoom.getNickname()
         );
+    }
+
+    public void removeMemberFromRoom(Long requesterId, Long roomId, Long memberId) {
+        // Fetch room
+        Room room = roomRepository.findById(roomId)
+                .orElseThrow(() -> new IllegalArgumentException("Room not found"));
+
+        // Check requester is the owner
+        if (!room.getOwner().getId().equals(requesterId)) {
+            throw new AccessDeniedException("Only the owner can remove members");
+        }
+
+        // Fetch member
+        UserRoom member = userRoomRepository.findById(memberId)
+                .orElseThrow(() -> new IllegalArgumentException("Member not found"));
+
+        // Check member belongs to this room
+        if (!member.getRoom().getId().equals(roomId)) {
+            throw new IllegalArgumentException("Member does not belong to this room");
+        }
+
+        // Soft delete
+        if (!member.isStillAMember()) {
+            throw new MemberAlreadyRemovedException("Member is already removed");
+        }
+        member.setStillAMember(false);
+        userRoomRepository.save(member);
     }
 }

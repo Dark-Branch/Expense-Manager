@@ -13,5 +13,5 @@ public class RoomResponse {
     private Long id;
     private String name;
     private UserSummary owner;
-    private List<UserSummary> participants;
+    private List<ParticipantSummary> participants;
 }

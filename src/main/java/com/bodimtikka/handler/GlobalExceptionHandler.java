@@ -91,6 +91,16 @@ public class GlobalExceptionHandler {
         return buildError(HttpStatus.NOT_FOUND, ex.getMessage());
     }
 
+    @ExceptionHandler(MemberAlreadyExistsException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(MemberAlreadyExistsException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
+    @ExceptionHandler(MemberAlreadyRemovedException.class)
+    public ResponseEntity<Map<String, Object>> handleNotFound(MemberAlreadyRemovedException ex) {
+        return buildError(HttpStatus.CONFLICT, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidRequestException.class)
     public ResponseEntity<Map<String, Object>> handleInvalidRequest(InvalidRequestException ex) {
         return buildError(HttpStatus.BAD_REQUEST, ex.getMessage());

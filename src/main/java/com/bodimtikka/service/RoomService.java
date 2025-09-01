@@ -2,11 +2,9 @@ package com.bodimtikka.service;
 
 import com.bodimtikka.dto.room.*;
 import com.bodimtikka.exception.ResourceNotFoundException;
-import com.bodimtikka.model.Participant;
 import com.bodimtikka.model.Room;
 import com.bodimtikka.model.User;
 import com.bodimtikka.model.UserRoom;
-import com.bodimtikka.repository.ParticipantRepository;
 import com.bodimtikka.repository.RoomRepository;
 import com.bodimtikka.repository.UserRoomRepository;
 import lombok.AllArgsConstructor;
@@ -23,7 +21,6 @@ public class RoomService {
 
     private final RoomRepository roomRepository;
     private final UserRoomRepository userRoomRepository;
-    private final ParticipantRepository participantRepository;
     private final UserService userService;
 
     // Create or update a room
@@ -39,7 +36,7 @@ public class RoomService {
 
         // Check if the user is a participant in this room
         boolean isMember = room.getUserRooms().stream()
-                .anyMatch(ur -> ur.getParticipant().getUser().getId().equals(userId));
+                .anyMatch(ur -> ur.getUser().getId().equals(userId));
 
         if (!isMember) {
             throw new AccessDeniedException("You are not a member of this room");
@@ -49,7 +46,7 @@ public class RoomService {
         List<ParticipantSummary> participants = room.getUserRooms().stream()
                 .filter(UserRoom::isStillAMember)
                 .map(ur -> new ParticipantSummary(
-                        ur.getParticipant().getId(),
+                        ur.getId(),
                         ur.getNickname()
                 ))
                 .toList();
@@ -81,12 +78,6 @@ public class RoomService {
         // --- Fetch user from DB using ID ---
         User ownerUser = userService.getUserByIdOrThrow(userId);
 
-        // --- Create a Participant for the owner ---
-        Participant ownerParticipant = new Participant();
-        ownerParticipant.setUser(ownerUser);
-        ownerParticipant.setDisplayName(ownerUser.getName()); // initial nickname
-        participantRepository.save(ownerParticipant); // save participant first
-
         // --- Create room ---
         Room room = new Room();
         room.setName(request.getName());
@@ -94,7 +85,7 @@ public class RoomService {
 
         // --- Assign owner as a UserRoom ---
         UserRoom ownerUserRoom = new UserRoom();
-        ownerUserRoom.setParticipant(ownerParticipant);
+        ownerUserRoom.setUser(ownerUser);
         ownerUserRoom.setRoom(room);
         ownerUserRoom.setNickname(ownerUser.getName());
         ownerUserRoom.setStillAMember(true);
@@ -106,14 +97,12 @@ public class RoomService {
         Room savedRoom = roomRepository.save(room);
 
         // --- Prepare participants list for response ---
-        List<UserSummary> participants = savedRoom.getUserRooms().stream()
+        List<ParticipantSummary> participants = savedRoom.getUserRooms().stream()
                 .map(ur -> {
-                    Participant p = ur.getParticipant();
-                    User u = p.getUser();
-                    return new UserSummary(
+                    User u = ur.getUser();
+                    return new ParticipantSummary(
                             u.getId(),
-                            u.getName(),
-                            u.getEmail()
+                            u.getName()
                     );
                 })
                 .toList();
@@ -130,7 +119,7 @@ public class RoomService {
     @Transactional(readOnly = true)
     public List<RoomSummaryResponse> getUserRooms(Long userId) {
         // Fetch all UserRoom entries where participant.user.id == userId
-        List<UserRoom> userRooms = userRoomRepository.findByParticipantUserId(userId);
+        List<UserRoom> userRooms = userRoomRepository.findByUserId(userId);
 
         // Map to RoomSummaryResponse DTO
         return userRooms.stream()
@@ -138,9 +127,9 @@ public class RoomService {
                     Room room = ur.getRoom();
                     List<ParticipantSummary> participants = room.getUserRooms().stream()
                             .filter(UserRoom::isStillAMember)
-                            .map(p -> new ParticipantSummary(
-                                    p.getParticipant().getId(),
-                                    p.getNickname()
+                            .map(userRoom -> new ParticipantSummary(
+                                    userRoom.getUser().getId(),
+                                    userRoom.getNickname()
                             ))
                             .toList();
                     return new RoomSummaryResponse(room.getId(), room.getName(), participants);

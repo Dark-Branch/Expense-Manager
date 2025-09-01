@@ -17,27 +17,32 @@ public class UserRoom {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // Many participants per room, fetch lazily to avoid loading User/Participant details unnecessarily
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "participant_id", nullable = false)
-    private Participant participant;
-
     // The room they belong to, fetch lazily
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "room_id", nullable = false)
     @JsonBackReference
     private Room room;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = true)
+    @JsonIgnore
+    private User user;
+
     private String nickname;
 
     private LocalDateTime joinedAt = LocalDateTime.now();
 
-    private boolean isStillAMember;
+    private boolean isStillAMember = true;
 
     public UserRoom() {}
 
-    public UserRoom(Participant participant, Room room, String nickname) {
-        this.participant = participant;
+    public UserRoom(User user, Room room, String nickname) {
+        this.user = user;
+        this.room = room;
+        this.nickname = nickname;
+    }
+
+    public UserRoom(Room room, String nickname) {
         this.room = room;
         this.nickname = nickname;
     }

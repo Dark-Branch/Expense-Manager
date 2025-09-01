@@ -1,6 +1,6 @@
 package com.bodimtikka.dto.room;
 
 public record ParticipantSummary(
-        Long participantId,
+        Long userId,
         String nickname
 ) {}

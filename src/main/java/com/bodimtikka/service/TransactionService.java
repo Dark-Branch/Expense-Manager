@@ -5,6 +5,8 @@ import com.bodimtikka.dto.TransactionParticipantDTO;
 import com.bodimtikka.model.*;
 import com.bodimtikka.model.TransactionParticipant.Role;
 import com.bodimtikka.repository.*;
+import lombok.AllArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,22 +19,13 @@ import java.util.stream.Collectors;
 
 @Service
 @Transactional
+@AllArgsConstructor
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final TransactionParticipantRepository transactionParticipantRepository;
     private final RoomRepository roomRepository;
-    private final ParticipantRepository participantRepository;
-
-    public TransactionService(TransactionRepository transactionRepository,
-                              TransactionParticipantRepository transactionParticipantRepository,
-                              RoomRepository roomRepository,
-                              ParticipantRepository participantRepository) {
-        this.transactionRepository = transactionRepository;
-        this.transactionParticipantRepository = transactionParticipantRepository;
-        this.roomRepository = roomRepository;
-        this.participantRepository = participantRepository;
-    }
+    private final UserRoomRepository userRoomRepository;
 
     /**
      * Create a transaction in a room with participants.
@@ -58,7 +51,7 @@ public class TransactionService {
 
         // Add senders
         for (int i = 0; i < senderParticipantIds.size(); i++) {
-            Participant sender = participantRepository.findById(senderParticipantIds.get(i))
+            UserRoom sender = userRoomRepository.findById(senderParticipantIds.get(i))
                     .orElseThrow(() -> new IllegalArgumentException("Sender participant not found"));
 
             TransactionParticipant tp = new TransactionParticipant();
@@ -72,7 +65,7 @@ public class TransactionService {
 
         // Add receivers
         for (int i = 0; i < receiverParticipantIds.size(); i++) {
-            Participant receiver = participantRepository.findById(receiverParticipantIds.get(i))
+            UserRoom receiver = userRoomRepository.findById(receiverParticipantIds.get(i))
                     .orElseThrow(() -> new IllegalArgumentException("Receiver participant not found"));
 
             TransactionParticipant tp = new TransactionParticipant();
@@ -141,7 +134,7 @@ public class TransactionService {
                 .stream()
                 .map(tp -> new TransactionParticipantDTO(
                         tp.getParticipant().getId(),
-                        tp.getParticipant().getDisplayName(),
+                        tp.getParticipant().getNickname(),
                         tp.getRole(),
                         tp.getShareAmount()
                 ))

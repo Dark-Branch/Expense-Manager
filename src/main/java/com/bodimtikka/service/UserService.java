@@ -1,5 +1,6 @@
 package com.bodimtikka.service;
 
+import com.bodimtikka.exception.ResourceNotFoundException;
 import com.bodimtikka.model.User;
 import com.bodimtikka.repository.UserRepository;
 import org.springframework.stereotype.Service;
@@ -63,8 +64,9 @@ public class UserService {
     /**
      * Delete a user
      */
-    public void deleteUser(Long userId) {
-        User user = getUserById(userId);
+    public void deleteUser(Long id) {
+        User user = userRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         userRepository.delete(user);
     }
 }

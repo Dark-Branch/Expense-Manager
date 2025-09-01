@@ -1,6 +1,5 @@
 package com.bodimtikka.security;
 
-import com.bodimtikka.repository.UserAuthRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -21,11 +20,9 @@ import java.util.stream.Collectors;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
-    private final UserAuthRepository userAuthRepository;
 
-    public JwtAuthenticationFilter(JwtService jwtService, UserAuthRepository userAuthRepository) {
+    public JwtAuthenticationFilter(JwtService jwtService) {
         this.jwtService = jwtService;
-        this.userAuthRepository = userAuthRepository;
     }
 
     @Override

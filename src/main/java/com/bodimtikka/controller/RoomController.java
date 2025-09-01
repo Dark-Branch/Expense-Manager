@@ -1,7 +1,14 @@
 package com.bodimtikka.controller;
 
-import com.bodimtikka.model.Room;
+import com.bodimtikka.dto.room.RoomRequest;
+import com.bodimtikka.dto.room.RoomResponse;
+import com.bodimtikka.dto.room.RoomSummaryResponse;
+import com.bodimtikka.security.JwtUserPrincipal;
 import com.bodimtikka.service.RoomService;
+import jakarta.validation.Valid;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,33 +23,49 @@ public class RoomController {
         this.roomService = roomService;
     }
 
-    // --- Create a room ---
-    @PostMapping("/create")
-    public Room createRoom(@RequestBody Room room) {
-        return roomService.saveRoom(room);
+    /**
+     * Create a new room. The authenticated user becomes the owner.
+     */
+    @PostMapping
+    public ResponseEntity<RoomResponse> createRoom(
+            @Valid
+            @RequestBody RoomRequest request,
+            @AuthenticationPrincipal JwtUserPrincipal userDetails) {
+        RoomResponse room = roomService.createRoom(request, userDetails.id());
+        return ResponseEntity.ok(room);
     }
 
-    // --- Get room by ID ---
+    /**
+     * Get room details by ID.
+     */
     @GetMapping("/{id}")
-    public Room getRoomById(@PathVariable Long id) {
-        return roomService.getRoomById(id);
+    public ResponseEntity<RoomSummaryResponse> getRoomById(
+            @PathVariable Long id,
+            @AuthenticationPrincipal JwtUserPrincipal userDetails) {
+        RoomSummaryResponse response = roomService.getRoomById(id, userDetails.id());
+        return ResponseEntity.ok(response);
     }
 
-    // --- List all rooms ---
-    @GetMapping("/all")
-    public List<Room> getAllRooms() {
-        return roomService.getAllRooms();
+    /**
+     * List all rooms the user is a member of.
+     */
+    @GetMapping
+    @PreAuthorize("isAuthenticated()") // only authenticated users can access
+    public ResponseEntity<List<RoomSummaryResponse>> getUserRooms(
+            @AuthenticationPrincipal JwtUserPrincipal userDetails) {
+        List<RoomSummaryResponse> rooms = roomService.getUserRooms(userDetails.id());
+        return ResponseEntity.ok(rooms);
     }
 
-    // --- Delete a room ---
-    @DeleteMapping("/delete/{id}")
-    public void deleteRoom(@PathVariable Long id) {
-        roomService.deleteRoom(id);
-    }
-
-    // Optional: find room by name
-    @GetMapping("/name/{name}")
-    public Room getRoomByName(@PathVariable String name) {
-        return roomService.getRoomByName(name);
+    /**
+     * Delete a room. Only the owner can delete.
+     */
+    @DeleteMapping("/{id}")
+    @PreAuthorize("isAuthenticated()") // only authenticated users
+    public ResponseEntity<Void> deleteRoom(
+            @PathVariable Long id,
+            @AuthenticationPrincipal JwtUserPrincipal userDetails) {
+        roomService.deleteRoom(id, userDetails.id());
+        return ResponseEntity.noContent().build();
     }
 }

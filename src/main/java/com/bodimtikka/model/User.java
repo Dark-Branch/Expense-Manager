@@ -16,8 +16,12 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false)
     private String name;
-    private String email;  // unique, used for login reference
+
+    // unique, used for login reference
+    @Column(nullable = false, unique = true)
+    private String email;
 
     // Lazy fetch to prevent unnecessary joins when accessing User directly
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)

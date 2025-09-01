@@ -20,9 +20,9 @@ public class UserService {
     /**
      * Get user by ID
      */
-    private User getUserById(Long id) {
+    public User getUserByIdOrThrow(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     public Optional<User> getUserByIdOptional(Long id) {
@@ -48,7 +48,7 @@ public class UserService {
      * Update user details
      */
     public User updateUser(Long userId, String newName, String newEmail) {
-        User user = getUserById(userId);
+        User user = getUserByIdOrThrow(userId);
 
         // Optional: check for email uniqueness
         if (!user.getEmail().equals(newEmail) && userRepository.existsByEmail(newEmail)) {

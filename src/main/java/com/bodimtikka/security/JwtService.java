@@ -92,9 +92,15 @@ public class JwtService {
 
     public boolean isTokenValid(String token) {
         try {
-            Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token);
+            Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token);
             return true;
-        } catch (JwtValidationException e) {
+        } catch (io.jsonwebtoken.ExpiredJwtException e) {
+            return false;
+        } catch (io.jsonwebtoken.JwtException e) {
+            // malformed, unsupported, signature failed, ...
             return false;
         }
     }

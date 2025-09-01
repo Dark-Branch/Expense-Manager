@@ -5,6 +5,7 @@ import com.bodimtikka.model.User;
 import com.bodimtikka.repository.UserRepository;
 import com.bodimtikka.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.transaction.Transactional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +24,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@Transactional
 public class UserControllerIntegrationTest {
 
     @Autowired

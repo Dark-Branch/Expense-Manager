@@ -14,6 +14,9 @@ public interface UserRoomRepository extends JpaRepository<UserRoom, Long> {
     // Find all UserRooms for a given participant
     List<UserRoom> findByParticipantId(Long participantId);
 
+    // UserRoom -> Participant -> User -> id
+    List<UserRoom> findByParticipantUserId(Long userId);
+
     @Query("SELECT ur FROM UserRoom ur WHERE ur.room.id = :roomId")
     List<UserRoom> findUserRoomsByRoomId(@Param("roomId") Long roomId);
 }

@@ -77,7 +77,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, Object>> handleAccessDenied(AccessDeniedException ex) {
-        return buildError(HttpStatus.FORBIDDEN, "Access Denied");
+        return buildError(HttpStatus.FORBIDDEN, "Access Denied: " + ex.getMessage());
     }
 
     // --- Business logic ---

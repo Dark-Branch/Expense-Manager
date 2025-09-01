@@ -5,6 +5,9 @@ import com.bodimtikka.model.User;
 import com.bodimtikka.model.UserAuth;
 import com.bodimtikka.repository.UserAuthRepository;
 import com.bodimtikka.repository.UserRepository;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -37,16 +40,16 @@ public class AuthService {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
-        userRepository.save(user);
 
         UserAuth auth = new UserAuth();
-        auth.setUser(user);
         auth.setPasswordHash(passwordEncoder.encode(rawPassword));
         auth.setRoles("ROLE_USER");
         auth.setActive(true);
         auth.setLastLogin(LocalDateTime.now());
 
-        userAuthRepository.save(auth);
+        user.setAuth(auth);
+
+        userRepository.save(user);  // Cascade ALL saves auth too
 
         return user;
     }
@@ -58,13 +61,13 @@ public class AuthService {
         Optional<UserAuth> authOpt = userAuthRepository.findByUserEmail(email);
 
         if (authOpt.isEmpty() || !authOpt.get().isActive()) {
-            throw new RuntimeException("Invalid credentials or inactive account");
+            throw new DisabledException("Invalid credentials or inactive account");
         }
 
         UserAuth auth = authOpt.get();
 
         if (!passwordEncoder.matches(rawPassword, auth.getPasswordHash())) {
-            throw new RuntimeException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         // Update last login
@@ -79,9 +82,14 @@ public class AuthService {
      */
     public void updatePassword(Long userId, String newRawPassword) {
         UserAuth auth = userAuthRepository.findByUserId(userId)
-                .orElseThrow(() -> new RuntimeException("User auth not found"));
+                .orElseThrow(() -> new UsernameNotFoundException("User auth not found"));
+
+        if (newRawPassword == null || newRawPassword.isBlank()) {
+            throw new IllegalArgumentException("Password cannot be empty");
+        }
 
         auth.setPasswordHash(passwordEncoder.encode(newRawPassword));
         userAuthRepository.save(auth);
     }
+
 }

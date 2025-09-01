@@ -8,7 +8,9 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.stereotype.Service;
 
 import java.security.Key;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 @Service
 public class JwtService {
@@ -24,28 +26,37 @@ public class JwtService {
     public void init() {
         key = Keys.hmacShaKeyFor(jwtProperties.getSecret().getBytes());
     }
-    public String generateToken(String email) {
+
+    /**
+     * Generate JWT token with user ID as subject and optional roles
+     */
+    public String generateToken(Long userId, List<String> roles) {
         return Jwts.builder()
-                .setSubject(email)
+                .setSubject(String.valueOf(userId))
+                .claim("roles", roles)
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + jwtProperties.getExpirationMs()))
                 .signWith(key)
                 .compact();
     }
 
-    public String extractEmail(String token) {
+    /**
+     * Extract user ID from JWT token
+     */
+    public Long extractUserId(String token) {
         try {
-            return Jwts.parserBuilder()
+            String sub = Jwts.parserBuilder()
                     .setSigningKey(key)
                     .build()
                     .parseClaimsJws(token)
                     .getBody()
                     .getSubject();
+            return Long.parseLong(sub);
         } catch (ExpiredJwtException e) {
             throw new JwtValidationException("JWT token has expired", e);
         } catch (MalformedJwtException e) {
             throw new JwtValidationException("JWT token is malformed", e);
-        } catch (SecurityException e) {
+        } catch (SecurityException  e) {
             throw new JwtValidationException("JWT signature is invalid", e);
         } catch (UnsupportedJwtException e) {
             throw new JwtValidationException("JWT token is unsupported", e);
@@ -53,6 +64,29 @@ public class JwtService {
             throw new JwtValidationException("JWT token is empty or null", e);
         } catch (JwtException e) {
             throw new JwtValidationException("JWT token is invalid", e);
+        }
+    }
+
+    /**
+     * Extract roles from JWT token
+     */
+    public List<String> extractRoles(String token) {
+        try {
+            Claims claims = Jwts.parserBuilder()
+                    .setSigningKey(key)
+                    .build()
+                    .parseClaimsJws(token)
+                    .getBody();
+
+            Object rolesObj = claims.get("roles");
+            if (rolesObj instanceof List<?> list) {
+                return list.stream()
+                        .map(Object::toString)
+                        .toList(); // safely convert to List<String>
+            }
+            return Collections.emptyList();
+        } catch (JwtException e) {
+            throw new JwtValidationException("Cannot extract roles from JWT", e);
         }
     }
 

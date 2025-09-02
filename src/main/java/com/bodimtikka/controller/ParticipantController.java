@@ -1,9 +1,9 @@
 package com.bodimtikka.controller;
 
-import com.bodimtikka.dto.userroom.UserRoomDTO;
-import com.bodimtikka.dto.userroom.AddMemberRequest;
+import com.bodimtikka.dto.participant.ParticipantDTO;
+import com.bodimtikka.dto.participant.AddParticipantRequest;
 import com.bodimtikka.security.JwtUserPrincipal;
-import com.bodimtikka.service.UserRoomService;
+import com.bodimtikka.service.ParticipantService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequestMapping("/api/user-rooms")
-public class UserRoomController {
+public class ParticipantController {
 
-    private final UserRoomService userRoomService;
+    private final ParticipantService participantService;
 
-    public UserRoomController(UserRoomService userRoomService) {
-        this.userRoomService = userRoomService;
+    public ParticipantController(ParticipantService participantService) {
+        this.participantService = participantService;
     }
 
     /**
@@ -25,12 +25,12 @@ public class UserRoomController {
      */
     @PostMapping("/{roomId}/members")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UserRoomDTO> addMemberToRoom(
+    public ResponseEntity<ParticipantDTO> addMemberToRoom(
             @PathVariable Long roomId,
-            @Valid @RequestBody AddMemberRequest request,
+            @Valid @RequestBody AddParticipantRequest request,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
         System.out.println("jeje");
-        UserRoomDTO dto = userRoomService.addMemberToRoom(
+        ParticipantDTO dto = participantService.addMemberToRoom(
                 principal.id(), roomId, request.getUserId(), request.getNickname()
         );
         return ResponseEntity.ok(dto);
@@ -46,7 +46,7 @@ public class UserRoomController {
             @PathVariable Long memberId,
             @AuthenticationPrincipal JwtUserPrincipal principal) {
 
-        userRoomService.removeMemberFromRoom(principal.id(), roomId, memberId);
+        participantService.removeMemberFromRoom(principal.id(), roomId, memberId);
         return ResponseEntity.noContent().build();
     }
 }

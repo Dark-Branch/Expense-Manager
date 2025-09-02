@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "user_rooms")
-public class UserRoom {
+public class Participant {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,15 +34,15 @@ public class UserRoom {
 
     private boolean isStillAMember = true;
 
-    public UserRoom() {}
+    public Participant() {}
 
-    public UserRoom(User user, Room room, String nickname) {
+    public Participant(User user, Room room, String nickname) {
         this.user = user;
         this.room = room;
         this.nickname = nickname;
     }
 
-    public UserRoom(Room room, String nickname) {
+    public Participant(Room room, String nickname) {
         this.room = room;
         this.nickname = nickname;
     }

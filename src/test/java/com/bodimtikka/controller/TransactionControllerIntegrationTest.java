@@ -2,10 +2,10 @@ package com.bodimtikka.controller;
 
 import com.bodimtikka.dto.TransactionCreateRequestDTO;
 import com.bodimtikka.model.Room;
-import com.bodimtikka.model.UserRoom;
+import com.bodimtikka.model.Participant;
 import com.bodimtikka.repository.RoomRepository;
 import com.bodimtikka.repository.TransactionRepository;
-import com.bodimtikka.repository.UserRoomRepository;
+import com.bodimtikka.repository.ParticipantRepository;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,7 +33,7 @@ public class TransactionControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Autowired
-    private UserRoomRepository userRoomRepository;
+    private ParticipantRepository participantRepository;
 
     @Autowired
     private RoomRepository roomRepository;
@@ -44,23 +44,23 @@ public class TransactionControllerIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    private UserRoom sender;
-    private UserRoom receiver;
+    private Participant sender;
+    private Participant receiver;
     private Room room;
 
     @BeforeEach
     public void setup() {
         transactionRepository.deleteAll();
-        userRoomRepository.deleteAll();
+        participantRepository.deleteAll();
         roomRepository.deleteAll();
 
-        sender = new UserRoom();
+        sender = new Participant();
         sender.setNickname("Alice");
-        userRoomRepository.save(sender);
+        participantRepository.save(sender);
 
-        receiver = new UserRoom();
+        receiver = new Participant();
         receiver.setNickname("Bob");
-        userRoomRepository.save(receiver);
+        participantRepository.save(receiver);
 
         room = new Room();
         room.setName("Test Room");

@@ -6,7 +6,6 @@ import com.bodimtikka.model.*;
 import com.bodimtikka.model.TransactionParticipant.Role;
 import com.bodimtikka.repository.*;
 import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,7 +24,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final TransactionParticipantRepository transactionParticipantRepository;
     private final RoomRepository roomRepository;
-    private final UserRoomRepository userRoomRepository;
+    private final ParticipantRepository participantRepository;
 
     /**
      * Create a transaction in a room with participants.
@@ -51,7 +50,7 @@ public class TransactionService {
 
         // Add senders
         for (int i = 0; i < senderParticipantIds.size(); i++) {
-            UserRoom sender = userRoomRepository.findById(senderParticipantIds.get(i))
+            Participant sender = participantRepository.findById(senderParticipantIds.get(i))
                     .orElseThrow(() -> new IllegalArgumentException("Sender participant not found"));
 
             TransactionParticipant tp = new TransactionParticipant();
@@ -65,7 +64,7 @@ public class TransactionService {
 
         // Add receivers
         for (int i = 0; i < receiverParticipantIds.size(); i++) {
-            UserRoom receiver = userRoomRepository.findById(receiverParticipantIds.get(i))
+            Participant receiver = participantRepository.findById(receiverParticipantIds.get(i))
                     .orElseThrow(() -> new IllegalArgumentException("Receiver participant not found"));
 
             TransactionParticipant tp = new TransactionParticipant();

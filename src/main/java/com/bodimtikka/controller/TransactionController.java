@@ -3,19 +3,17 @@ package com.bodimtikka.controller;
 import com.bodimtikka.dto.TransactionCreateRequestDTO;
 import com.bodimtikka.dto.TransactionDTO;
 import com.bodimtikka.service.TransactionService;
+import lombok.AllArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
+@AllArgsConstructor
 @RestController
 @RequestMapping("/api/transactions")
 public class TransactionController {
 
     private final TransactionService transactionService;
-
-    public TransactionController(TransactionService transactionService) {
-        this.transactionService = transactionService;
-    }
 
     // --- Create transaction ---
     @PostMapping("/create")

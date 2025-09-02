@@ -4,9 +4,9 @@ import com.bodimtikka.dto.room.*;
 import com.bodimtikka.exception.ResourceNotFoundException;
 import com.bodimtikka.model.Room;
 import com.bodimtikka.model.User;
-import com.bodimtikka.model.UserRoom;
+import com.bodimtikka.model.Participant;
 import com.bodimtikka.repository.RoomRepository;
-import com.bodimtikka.repository.UserRoomRepository;
+import com.bodimtikka.repository.ParticipantRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -20,7 +20,7 @@ import java.util.List;
 public class RoomService {
 
     private final RoomRepository roomRepository;
-    private final UserRoomRepository userRoomRepository;
+    private final ParticipantRepository participantRepository;
     private final UserService userService;
 
     // Create or update a room
@@ -35,7 +35,7 @@ public class RoomService {
                 .orElseThrow(() -> new ResourceNotFoundException("Room not found with ID: " + roomId));
 
         // Check if the user is a participant in this room
-        boolean isMember = room.getUserRooms().stream()
+        boolean isMember = room.getParticipants().stream()
                 .anyMatch(ur -> ur.getUser().getId().equals(userId));
 
         if (!isMember) {
@@ -43,8 +43,8 @@ public class RoomService {
         }
 
         // Map participants for response (using nickname from UserRoom)
-        List<ParticipantSummary> participants = room.getUserRooms().stream()
-                .filter(UserRoom::isStillAMember)
+        List<ParticipantSummary> participants = room.getParticipants().stream()
+                .filter(Participant::isStillAMember)
                 .map(ur -> new ParticipantSummary(
                         ur.getId(),
                         ur.getNickname()
@@ -84,20 +84,20 @@ public class RoomService {
         room.setOwner(ownerUser);
 
         // --- Assign owner as a UserRoom ---
-        UserRoom ownerUserRoom = new UserRoom();
-        ownerUserRoom.setUser(ownerUser);
-        ownerUserRoom.setRoom(room);
-        ownerUserRoom.setNickname(ownerUser.getName());
-        ownerUserRoom.setStillAMember(true);
+        Participant ownerParticipant = new Participant();
+        ownerParticipant.setUser(ownerUser);
+        ownerParticipant.setRoom(room);
+        ownerParticipant.setNickname(ownerUser.getName());
+        ownerParticipant.setStillAMember(true);
 
         // --- Link bidirectionally ---
-        room.getUserRooms().add(ownerUserRoom);
+        room.getParticipants().add(ownerParticipant);
 
         // --- Save room (cascade will save UserRoom) ---
         Room savedRoom = roomRepository.save(room);
 
         // --- Prepare participants list for response ---
-        List<ParticipantSummary> participants = savedRoom.getUserRooms().stream()
+        List<ParticipantSummary> participants = savedRoom.getParticipants().stream()
                 .map(ur -> {
                     User u = ur.getUser();
                     return new ParticipantSummary(
@@ -119,14 +119,14 @@ public class RoomService {
     @Transactional(readOnly = true)
     public List<RoomSummaryResponse> getUserRooms(Long userId) {
         // Fetch all UserRoom entries where participant.user.id == userId
-        List<UserRoom> userRooms = userRoomRepository.findByUserId(userId);
+        List<Participant> userRooms = participantRepository.findByUserId(userId);
 
         // Map to RoomSummaryResponse DTO
         return userRooms.stream()
                 .map(ur -> {
                     Room room = ur.getRoom();
-                    List<ParticipantSummary> participants = room.getUserRooms().stream()
-                            .filter(UserRoom::isStillAMember)
+                    List<ParticipantSummary> participants = room.getParticipants().stream()
+                            .filter(Participant::isStillAMember)
                             .map(userRoom -> new ParticipantSummary(
                                     userRoom.getUser().getId(),
                                     userRoom.getNickname()

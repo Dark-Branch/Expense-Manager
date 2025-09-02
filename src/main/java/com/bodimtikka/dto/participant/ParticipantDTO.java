@@ -1,8 +1,8 @@
-package com.bodimtikka.dto.userroom;
+package com.bodimtikka.dto.participant;
 
 import com.bodimtikka.dto.RoomDTO;
 
-public record UserRoomDTO(
+public record ParticipantDTO(
         Long userId,
         RoomDTO room,
         String nickname

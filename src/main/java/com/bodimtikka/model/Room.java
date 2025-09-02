@@ -27,7 +27,7 @@ public class Room {
     // --- Room Members ---
     @OneToMany(mappedBy = "room", cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference
-    private Set<UserRoom> userRooms = new HashSet<>();
+    private Set<Participant> participants = new HashSet<>();
 
     // --- Transactions in the room ---
     @OneToMany(mappedBy = "room")

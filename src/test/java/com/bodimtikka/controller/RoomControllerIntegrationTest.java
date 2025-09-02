@@ -5,8 +5,9 @@ import com.bodimtikka.dto.room.RoomResponse;
 import com.bodimtikka.dto.room.RoomSummaryResponse;
 import com.bodimtikka.model.User;
 import com.bodimtikka.repository.RoomRepository;
+import com.bodimtikka.repository.UserAuthRepository;
 import com.bodimtikka.repository.UserRepository;
-import com.bodimtikka.repository.UserRoomRepository;
+import com.bodimtikka.repository.ParticipantRepository;
 import com.bodimtikka.security.JwtService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.transaction.Transactional;
@@ -41,7 +42,10 @@ public class RoomControllerIntegrationTest {
     private RoomRepository roomRepository;
 
     @Autowired
-    private UserRoomRepository userRoomRepository;
+    private ParticipantRepository participantRepository;
+
+    @Autowired
+    private UserAuthRepository userAuthRepository;
 
     @Autowired
     private JwtService jwtService;
@@ -54,9 +58,10 @@ public class RoomControllerIntegrationTest {
 
     @BeforeEach
     public void setup() {
-        userRoomRepository.deleteAll();
+        participantRepository.deleteAll();
         roomRepository.deleteAll();
         userRepository.deleteAll();
+        userAuthRepository.deleteAll();
 
         // --- Create test user ---
         testUser = new User();

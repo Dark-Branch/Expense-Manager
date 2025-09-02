@@ -1,4 +1,4 @@
-package com.bodimtikka.dto.userroom;
+package com.bodimtikka.dto.participant;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -6,7 +6,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-public class AddMemberRequest {
+public class AddParticipantRequest {
     private Long userId;
 
     @NotBlank(message = "Nickname is required")

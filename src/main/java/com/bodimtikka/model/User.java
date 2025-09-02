@@ -25,7 +25,7 @@ public class User {
 
     // Lazy fetch to prevent unnecessary joins when accessing User directly
     @OneToMany(mappedBy = "user", fetch = FetchType.LAZY)
-    private Set<UserRoom> participants = new HashSet<>();
+    private Set<Participant> participants = new HashSet<>();
 
     @OneToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "auth_id")

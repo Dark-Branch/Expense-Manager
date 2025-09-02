@@ -18,7 +18,7 @@ public class TransactionParticipant {
     // user in this transaction
     @ManyToOne
     @JoinColumn(name = "participant_id")
-    private UserRoom participant;
+    private Participant participant;
 
     // transaction reference
     @ManyToOne
